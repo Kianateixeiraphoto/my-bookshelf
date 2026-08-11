@@ -158,3 +158,27 @@
   `;
   document.head.appendChild(style);
 })();
+
+/* COVER-CARD-POLISH: keep real book covers intact and remove the fallback icon once a cover loads. */
+(() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    .book .cover {
+      background: linear-gradient(145deg,#ffeaf2,#f9e9f2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .book .cover img {
+      width:100%;
+      height:100%;
+      object-fit:contain !important;
+      object-position:center;
+      display:block;
+      background:#fdebf2;
+    }
+    .book .cover.has-cover .cover-placeholder { display:none; }
+  `;
+  document.head.appendChild(style);
+})();
