@@ -1,89 +1,130 @@
-/* Excel / CSV importer for My Bookshelf. Uses the SheetJS global loaded by index.html. */
+/* Robust Excel / Google Sheets / CSV importer for My Bookshelf.
+   Supports sheets with a title row or blank rows above the real column headers. */
 (function(){
   const fileInput = document.getElementById('fileInput');
   const importBtn = document.getElementById('importBtn');
   if(!fileInput || !importBtn) return;
 
   fileInput.accept = '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json,.json';
-  importBtn.onclick = function(){ fileInput.click(); };
+  importBtn.onclick = () => fileInput.click();
 
-  const norm = v => String(v ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
-  const pick = (row,names) => {
-    for(const name of names){
-      const key = Object.keys(row).find(k => norm(k) === norm(name));
-      if(key && row[key] !== '' && row[key] != null) return row[key];
-    }
-    return '';
-  };
+  const clean = v => String(v ?? '').trim();
+  const norm = v => clean(v).toLowerCase().replace(/[\n\r]+/g,' ').replace(/[^a-z0-9]+/g,' ').trim();
   const num = v => {
-    const n = Number(String(v ?? '').replace(/[^0-9.\-]/g,''));
+    const n = Number(clean(v).replace(/,/g,'').replace(/[^0-9.\-]/g,''));
     return Number.isFinite(n) ? n : 0;
   };
-  const tags = v => String(v ?? '').split(/[,;|]/).map(x=>x.trim()).filter(Boolean);
+  const tags = v => clean(v).split(/[,;|]/).map(x=>x.trim()).filter(Boolean);
 
-  fileInput.onchange = async function(e){
-    const f = e.target.files[0];
-    if(!f) return;
-    try{
-      const ext = f.name.toLowerCase().split('.').pop();
-      if(ext === 'json'){
-        const incoming = JSON.parse(await f.text());
-        state = {...state,...incoming};
-      } else {
-        if(typeof XLSX === 'undefined') throw new Error('Spreadsheet support is still loading. Please try again in a moment.');
-        const wb = XLSX.read(await f.arrayBuffer(), {type:'array', cellDates:true});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-        if(!rows.length) throw new Error('The spreadsheet appears to be empty.');
+  function headerIndex(headers, names){
+    const wanted = names.map(norm);
+    return headers.findIndex(h => {
+      const x = norm(h);
+      return wanted.some(w => x === w || x.includes(w) || w.includes(x));
+    });
+  }
+  function pick(row, headers, names){
+    const i = headerIndex(headers,names);
+    return i >= 0 ? row[i] : '';
+  }
+  function findHeaderRow(rows){
+    let best=-1, bestScore=-1;
+    rows.slice(0,20).forEach((row,i)=>{
+      const h=row.map(norm);
+      const score=['book title','status','pages','author','rating'].reduce((n,k)=>n+(h.some(x=>x===k||x.includes(k))?1:0),0);
+      if(score>bestScore){bestScore=score;best=i;}
+    });
+    return bestScore>=2 ? best : -1;
+  }
+  function statusOf(v){
+    const s=clean(v).toLowerCase();
+    if(/currently|in progress|reading now/.test(s)) return 'Currently Reading';
+    if(/dnf|did not finish|abandon/.test(s)) return 'DNF';
+    if(/want|tbr|wishlist|to read/.test(s)) return 'Want to Read';
+    if(/read|finished/.test(s)) return 'Read';
+    return clean(v)||'Read';
+  }
 
-        const imported = rows.map((r,i)=>{
-          const title = pick(r,['Title','Book Title','Name']);
-          const author = pick(r,['Author','Book Author','Writer']);
-          const rawStatus = String(pick(r,['Status','Reading Status','Book Status']) || '').trim().toLowerCase();
-          let status = 'Read';
-          if(/currently|reading|in progress|reading now/.test(rawStatus)) status='Currently Reading';
-          else if(/dnf|did not finish|abandon/.test(rawStatus)) status='DNF';
-          else if(/want|tbr|wishlist|to read/.test(rawStatus)) status='Want to Read';
-          return {
-            id: crypto.randomUUID(),
-            title: String(title || ('Imported Book '+(i+1))),
-            author: String(author || ''),
-            status,
-            rating: num(pick(r,['Rating','Star Rating','Stars','My Rating'])),
-            pages: num(pick(r,['Pages','Page Count','Number of Pages'])),
-            tags: tags(pick(r,['Tags','Tropes','Genre','Genres','Genre Tags'])),
-            notes: String(pick(r,['Notes','Review','Comments'])),
-            cover: String(pick(r,['Cover','Cover URL','Cover Image','Image URL'])),
-            favorite: /^(yes|true|1|y)$/i.test(String(pick(r,['Favorite','Favorites'])))
-          };
-        }).filter(b=>b.title);
+  function convertRows(rows){
+    if(!rows.length) throw new Error('The spreadsheet contains no rows.');
+    const hi=findHeaderRow(rows);
+    if(hi<0) throw new Error('I found the spreadsheet, but could not find the book-title/status headers.');
+    const headers=rows[hi].map(clean);
+    const imported=rows.slice(hi+1).map((row)=>{
+      const title=clean(pick(row,headers,['BOOK TITLE','TITLE','NAME','BOOK']));
+      const author=clean(pick(row,headers,['AUTHOR','BOOK AUTHOR','WRITER']));
+      if(!title && !author) return null;
+      const genre=clean(pick(row,headers,['GENRE','GENRES','TAGS','TROPES','GENRE TAGS']));
+      const series=clean(pick(row,headers,['SERIES TITLE & NUMBER','SERIES TITLE','SERIES']));
+      const t=tags(genre);
+      if(series) t.push(series);
+      return {
+        id:crypto.randomUUID(), title, author,
+        status:statusOf(pick(row,headers,['STATUS','READING STATUS','BOOK STATUS'])),
+        rating:num(pick(row,headers,['RATING','STAR RATING','STARS','MY RATING'])),
+        pages:num(pick(row,headers,['PAGES','PAGE COUNT','NUMBER OF PAGES'])),
+        tags:t,
+        notes:clean(pick(row,headers,['NOTES','REVIEW','COMMENTS'])),
+        cover:clean(pick(row,headers,['COVER','COVER URL','COVER IMAGE','IMAGE URL'])),
+        favorite:/^(yes|true|1|y)$/i.test(clean(pick(row,headers,['FAVORITE','FAVORITES']))),
+        series,
+        startDate:clean(pick(row,headers,['START DATE','DATE STARTED'])),
+        finishDate:clean(pick(row,headers,['FINISH DATE','DATE FINISHED'])),
+        pubYear:clean(pick(row,headers,['PUB YEAR','PUBLICATION YEAR','YEAR'])),
+        format:clean(pick(row,headers,['FORMAT','BOOK FORMAT'])),
+        length:clean(pick(row,headers,['LENGTH','BOOK LENGTH'])),
+        readership:clean(pick(row,headers,['READERSHIP CATEGORY','READERSHIP'])),
+        published:clean(pick(row,headers,['PUBLISHED','PUBLISHING'])),
+        ku:clean(pick(row,headers,['KU','KINDLE UNLIMITED'])),
+        country:clean(pick(row,headers,['COUNTRY']))
+      };
+    }).filter(Boolean);
+    if(!imported.length) throw new Error('I found the headers, but no book rows underneath them.');
+    return imported;
+  }
 
-        const existing = new Map((state.books||[]).map(b=>[norm(b.title)+'|'+norm(b.author), b]));
-        let added=0, updated=0;
-        for(const book of imported){
-          const key = norm(book.title)+'|'+norm(book.author);
-          if(existing.has(key)){
-            const old = existing.get(key);
-            Object.assign(old, {...book, id:old.id});
-            updated++;
-          } else {
-            (state.books||[]).push(book);
-            added++;
-          }
-        }
-        saveLocal();
-        render();
-        if(typeof sync === 'function') await sync();
-        alert('Spreadsheet imported! Added '+added+' books and updated '+updated+'.');
-      }
-      saveLocal();
-      render();
-      if(ext === 'json' && typeof sync === 'function') await sync();
-    } catch(err){
-      console.error(err);
-      alert('I could not import that file. '+(err.message || err));
-    } finally {
-      e.target.value='';
+  async function importFile(file){
+    const ext=file.name.toLowerCase().split('.').pop();
+    if(ext==='json'){
+      const incoming=JSON.parse(await file.text());
+      if(!incoming || !Array.isArray(incoming.books)) throw new Error('That JSON backup does not contain a books list.');
+      return incoming.books;
     }
+    if(typeof XLSX==='undefined') throw new Error('Spreadsheet support did not load. Please refresh the page and try again.');
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+    let bestRows=null,bestScore=-1;
+    for(const sheetName of wb.SheetNames){
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:'',raw:false});
+      const hi=findHeaderRow(rows);
+      const score=hi>=0 ? rows[hi].filter(x=>clean(x)).length : -1;
+      if(score>bestScore){bestScore=score;bestRows=rows;}
+    }
+    if(!bestRows) throw new Error('The workbook could not be read.');
+    return convertRows(bestRows);
+  }
+
+  fileInput.onchange=async function(e){
+    const f=e.target.files[0]; if(!f) return;
+    try{
+      const imported=await importFile(f);
+      const existing=Array.isArray(state.books)?state.books:[];
+      const byKey=new Map(existing.map(b=>[norm(b.title)+'|'+norm(b.author),b]));
+      let added=0,updated=0;
+      for(const book of imported){
+        const key=norm(book.title)+'|'+norm(book.author);
+        const old=byKey.get(key);
+        if(old){
+          Object.assign(old,book,{id:old.id,cover:old.cover||book.cover||'',favorite:!!old.favorite});
+          updated++;
+        }else{existing.push(book);byKey.set(key,book);added++;}
+      }
+      state.books=existing;
+      saveLocal(); render();
+      if(typeof sync==='function' && session) await sync();
+      alert('Spreadsheet imported!\n\nAdded: '+added+'\nUpdated: '+updated);
+    }catch(err){
+      console.error('Import failed:',err);
+      alert('I could not import that file.\n\n'+(err.message||err));
+    }finally{e.target.value='';}
   };
 })();
