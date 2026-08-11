@@ -1,6 +1,15 @@
 /* Robust Excel / Google Sheets / CSV importer for My Bookshelf.
    Supports sheets with a title row or blank rows above the real column headers. */
 (function(){
+  /* Some existing spreadsheet rows use ratings above 5 (for example 6).
+     Keep the source value, but never let the UI call String.repeat() with a negative count. */
+  window.stars = function(r){
+    const n = Number(r);
+    if(!Number.isFinite(n) || n <= 0) return '—';
+    const filled = Math.min(5, Math.max(0, Math.round(n)));
+    return '★'.repeat(filled) + '☆'.repeat(5-filled);
+  };
+
   const fileInput = document.getElementById('fileInput');
   const importBtn = document.getElementById('importBtn');
   if(!fileInput || !importBtn) return;
