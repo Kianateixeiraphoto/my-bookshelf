@@ -145,3 +145,27 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
+
+/* The detailed editor is defined later in index.html as window.addBook.
+   The original editBook() function was defined earlier with the same name,
+   so its inline Edit buttons were still calling the short legacy form.
+   Route both Edit and + Add Book to the restored detailed editor. */
+(() => {
+  const installEditorRouting = () => {
+    try {
+      window.editBook = function(id) {
+        const book = state.books.find(b => b.id === id);
+        if (book && typeof window.addBook === 'function') window.addBook(book);
+      };
+      const addBtn = document.getElementById('addBookBtn');
+      if (addBtn && typeof window.addBook === 'function') {
+        addBtn.onclick = () => window.addBook();
+      }
+    } catch (e) {
+      console.warn('Detailed editor routing could not be installed yet', e);
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installEditorRouting);
+  else installEditorRouting();
+  setTimeout(installEditorRouting, 0);
+})();
