@@ -17,7 +17,7 @@
   function parse(text){
     const t=clean(text),ls=lines(t);const si=ls.findIndex(x=>/^Summary\s*:/i.test(x));let title='',author='';
     if(si>=2){title=ls[si-2].replace(/^Title:\s*/i,'').trim();author=ls[si-1].replace(/^by\s+/i,'').trim();}
-    if(!title){const ti=ls.find(x=>/^Title\s*:/i.test(x));if(ti)title=ti.replace(/^Title\s*:\s*/i,'').trim();}
+    if(!title){const ti=ls.find(x=>/^Title\s*:/i.test(x));if(ti)title=ti.replace(/^Title:\s*/i,'').trim();}
     if(!author){const ai=ls.find(x=>/^by\s+/i.test(x));if(ai)author=ai.replace(/^by\s+/i,'').trim();}
     const pub=(t.match(/(?:^|\n)\s*Published\s*:\s*(\d{4}-\d{2}-\d{2})/i)||[])[1]||'';
     const comp=(t.match(/(?:^|\n)\s*Completed\s*:\s*(\d{4}-\d{2}-\d{2})/i)||[])[1]||'';
@@ -29,9 +29,6 @@
   function populate(form,d){['title','author','rating','language','series','published','completed','words','chapters','comments','kudos','bookmarks','hits'].forEach(k=>setField(form,k,d[k]));[['categoryText',d.category],['fandomsText',d.fandoms],['relationshipsText',d.relationships],['warningsText',d.warnings],['charactersText',d.characters],['additionalTagsText',d.additionalTags]].forEach(([k,v])=>setField(form,k,v));}
   function attach(input){if(input.dataset.ao3FixAttached==='1')return;input.dataset.ao3FixAttached='1';input.onchange=async()=>{const file=input.files?.[0];if(!file)return;const form=document.getElementById('ficForm'),btn=document.getElementById('screenshotAO3Btn'),status=document.getElementById('ao3Status');if(!form||!btn||!status)return;try{btn.disabled=true;btn.textContent='🔎 Reading screenshot…';status.textContent='Reading AO3 metadata from your screenshot…';const raw=await ocr(file,p=>status.textContent=`Reading AO3 screenshot… ${p}%`);const d=parse(raw);populate(form,d);form.dataset.ao3Loaded=JSON.stringify({...d,source:'screenshot'});status.textContent='✓ Got it! I filled in the AO3 information. Please review it, then save. 💕';}catch(e){console.error('AO3 screenshot importer:',e);status.textContent=e?.message||'I could not read that screenshot. Try a clearer AO3 metadata screenshot.';}finally{btn.disabled=false;btn.textContent='📸 Upload AO3 Screenshot';input.value='';}};}
   const observer=new MutationObserver(()=>{const input=document.getElementById('ao3ScreenshotFile');if(input)attach(input);});observer.observe(document.documentElement,{childList:true,subtree:true});const existing=document.getElementById('ao3ScreenshotFile');if(existing)attach(existing);
-
-  // Mobile AO3 modal repair. The AO3 form is injected dynamically, so fix the
-  // actual modal every time it opens rather than relying on a page-level stylesheet.
   function installMobileAO3Fix(){
     if(document.getElementById('ao3-mobile-scroll-fix'))return;
     const style=document.createElement('style');style.id='ao3-mobile-scroll-fix';style.textContent=`
@@ -51,11 +48,16 @@
     installMobileAO3Fix();
     const modal=document.getElementById('modal'),card=document.getElementById('modalCard');
     if(!modal||!card||!modal.classList.contains('show'))return;
-    if(window.matchMedia('(max-width:700px)').matches){
-      modal.scrollTop=0;card.scrollTop=0;
-      requestAnimationFrame(()=>{modal.scrollTop=0;card.scrollTop=0;});
-    }
+    if(window.matchMedia('(max-width:700px)').matches){modal.scrollTop=0;card.scrollTop=0;requestAnimationFrame(()=>{modal.scrollTop=0;card.scrollTop=0;});}
   }
   installMobileAO3Fix();
   new MutationObserver(repairModal).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+})();
+
+/* AO3 modal close/save reliability repair. */
+(() => {
+  const isAO3=target=>!!target?.closest?.('#ficForm');
+  const closeAO3=()=>{const modal=document.getElementById('modal');if(!modal)return;modal.classList.remove('show');modal.removeAttribute('style');};
+  document.addEventListener('click',event=>{const button=event.target?.closest?.('#ficForm button');if(!button)return;const text=(button.textContent||'').trim().toLowerCase();if(text==='cancel')setTimeout(closeAO3,0);},true);
+  document.addEventListener('submit',event=>{if(!isAO3(event.target))return;setTimeout(closeAO3,0);},true);
 })();
