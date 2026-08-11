@@ -1,0 +1,49 @@
+name: Add DNF section
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-dnf-section:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Add DNF section
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          if 'id="dnfSection"' in s:
+              print('DNF section already present; nothing to do.')
+              raise SystemExit(0)
+
+          old = '''const q=($('bookSearch').value||'').toLowerCase(),sf=$('statusFilter').value,rf=Number($('ratingFilter').value||0),filtered=books.filter(b=>(!q||JSON.stringify(b).toLowerCase().includes(q))&&(!sf||b.status===sf)&&(!rf||Number(b.rating)>=rf)),cur=filtered.filter(b=>b.status==='Currently Reading'),arch=filtered.filter(b=>b.status!=='Currently Reading');$('currentlySection').innerHTML='<div class="section-title">📖 Currently Reading</div><div class="section-sub">Your current reads always stay right up top. 💕</div>'+(cur.length?'<div class="shelf">'+cur.map(bookCard).join('')+'</div>':'<div class="panel empty">Nothing currently reading. Time to pick a new victim. 😂📚</div>');$('archivedSection').innerHTML='<div class="section-title">📚 Archived Books</div><div class="section-sub">Finished, DNF, and other books live here.</div>'+(arch.length?'<div class="shelf">'+arch.map(bookCard).join('')+'</div>':'<div class="panel empty">No archived books yet.</div>');renderStats();renderBuy();renderFanfiction()}'''
+
+          new = '''const q=($('bookSearch').value||'').toLowerCase(),sf=$('statusFilter').value,rf=Number($('ratingFilter').value||0),filtered=books.filter(b=>(!q||JSON.stringify(b).toLowerCase().includes(q))&&(!sf||b.status===sf)&&(!rf||Number(b.rating)>=rf)),cur=filtered.filter(b=>b.status==='Currently Reading'),dnf=filtered.filter(b=>b.status==='DNF'),arch=filtered.filter(b=>b.status!=='Currently Reading'&&b.status!=='DNF');$('currentlySection').innerHTML='<div class="section-title">📖 Currently Reading</div><div class="section-sub">Your current reads always stay right up top. 💕</div>'+(cur.length?'<div class="shelf">'+cur.map(bookCard).join('')+'</div>':'<div class="panel empty">Nothing currently reading. Time to pick a new victim. 😂📚</div>');$('dnfSection').innerHTML='<div class="section-title">🚫 DNF — Did Not Finish</div><div class="section-sub">Books you decided not to finish live here. No judgment. 💕</div>'+(dnf.length?'<div class="shelf">'+dnf.map(bookCard).join('')+'</div>':'<div class="panel empty">No DNF books yet.</div>');$('archivedSection').innerHTML='<div class="section-title">📚 Archived Books</div><div class="section-sub">Finished and other books live here.</div>'+(arch.length?'<div class="shelf">'+arch.map(bookCard).join('')+'</div>':'<div class="panel empty">No archived books yet.</div>');renderStats();renderBuy();renderFanfiction()}'''
+
+          if old not in s:
+              raise SystemExit('Expected bookshelf render code was not found; no changes made.')
+          s = s.replace(old, new, 1)
+          s = s.replace('<div id="currentlySection" class="section"></div><div id="archivedSection" class="section"></div>', '<div id="currentlySection" class="section"></div><div id="dnfSection" class="section"></div><div id="archivedSection" class="section"></div>', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit DNF section
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add DNF section to bookshelf"
+          git push
