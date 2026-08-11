@@ -29,4 +29,10 @@
   function populate(form,d){['title','author','rating','language','series','published','completed','words','chapters','comments','kudos','bookmarks','hits'].forEach(k=>setField(form,k,d[k]));[['categoryText',d.category],['fandomsText',d.fandoms],['relationshipsText',d.relationships],['warningsText',d.warnings],['charactersText',d.characters],['additionalTagsText',d.additionalTags]].forEach(([k,v])=>setField(form,k,v));}
   function attach(input){if(input.dataset.ao3FixAttached==='1')return;input.dataset.ao3FixAttached='1';input.onchange=async()=>{const file=input.files?.[0];if(!file)return;const form=document.getElementById('ficForm'),btn=document.getElementById('screenshotAO3Btn'),status=document.getElementById('ao3Status');if(!form||!btn||!status)return;try{btn.disabled=true;btn.textContent='🔎 Reading screenshot…';status.textContent='Reading AO3 metadata from your screenshot…';const raw=await ocr(file,p=>status.textContent=`Reading AO3 screenshot… ${p}%`);const d=parse(raw);populate(form,d);form.dataset.ao3Loaded=JSON.stringify({...d,source:'screenshot'});status.textContent='✓ Got it! I filled in the AO3 information. Please review it, then save. 💕';}catch(e){console.error('AO3 screenshot importer:',e);status.textContent=e?.message||'I could not read that screenshot. Try a clearer AO3 metadata screenshot.';}finally{btn.disabled=false;btn.textContent='📸 Upload AO3 Screenshot';input.value='';}};}
   const observer=new MutationObserver(()=>{const input=document.getElementById('ao3ScreenshotFile');if(input)attach(input);});observer.observe(document.documentElement,{childList:true,subtree:true});const existing=document.getElementById('ao3ScreenshotFile');if(existing)attach(existing);
+
+  // mobile-fixes.js is loaded here because the main page already includes this file.
+  // This guarantees the iPhone modal scrolling fix is actually applied.
+  const mobile=document.createElement('script');
+  mobile.src='mobile-fixes.js?v=2';
+  document.head.appendChild(mobile);
 })();
