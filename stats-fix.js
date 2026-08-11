@@ -142,3 +142,37 @@
   script.defer = false;
   document.head.appendChild(script);
 })();
+
+/* FANFICTION-UI-CLEANUP
+ * The AO3 importer currently renders the useful combined Fanfiction section,
+ * but an older insights block can also be injected above it. Remove only that
+ * stale duplicate so the page has one set of fanfiction statistics.
+ */
+(() => {
+  const removeDuplicateInsights = () => {
+    const root = document.getElementById('fanfictionPanel');
+    if (!root) return;
+    const candidates = Array.from(root.querySelectorAll('*')).filter(el => {
+      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      return /^📊?\s*Fanfiction Insights\s*A quick look at your AO3 reads/i.test(text) ||
+        (text.startsWith('Fanfiction Insights') && text.includes('A quick look at your AO3 reads'));
+    });
+    candidates.forEach(el => {
+      const panel = el.closest('.panel');
+      if (panel && panel !== root) panel.remove();
+    });
+  };
+  const start = () => {
+    removeDuplicateInsights();
+    const root = document.getElementById('fanfictionPanel');
+    if (!root || root.dataset.ficCleanupInstalled) return;
+    root.dataset.ficCleanupInstalled = 'true';
+    new MutationObserver(() => removeDuplicateInsights()).observe(root, {childList:true,subtree:true});
+  };
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries += 1;
+    start();
+    if (document.getElementById('fanfictionPanel') || tries > 100) clearInterval(timer);
+  }, 100);
+})();
