@@ -14,6 +14,7 @@
     .book[data-cover-theme-ready="1"] .book-actions .btn:not(.primary){background:hsla(var(--cover-h),calc(var(--cover-s)*.72),96%,.92);border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%))}
     .book[data-cover-theme-ready="1"] .cover{background:linear-gradient(145deg,hsl(var(--cover-h),calc(var(--cover-s)*.92),calc(var(--cover-l) - 1%)),hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) + 9%)))}
     .book[data-cover-theme-ready="1"] .heart{border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));color:hsl(var(--cover-h),62%,36%);background:hsla(var(--cover-h),60%,96%,.78)}
+    @media(min-width:901px){.book .cover{height:285px}.book .cover img{min-height:285px}}
     @media(max-width:600px){.book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.20),transparent 82%)}}
   `;document.head.appendChild(style);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
