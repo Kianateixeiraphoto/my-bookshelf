@@ -92,3 +92,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run pages.yml --ref main
+
+# Trigger Pages deployment from a direct repository commit after the UI patch.
