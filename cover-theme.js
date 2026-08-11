@@ -1,14 +1,11 @@
 /* My Bookshelf — cover-inspired book card theming
  * Samples the assigned cover and gives each card a soft, readable tint based on it.
  * Falls back gracefully when a remote cover blocks pixel sampling.
+ * COVER-THEME-WIRED
  */
 (() => {
   const STYLE_ID = 'cover-theme-styles';
   const FALLBACK = { r: 244, g: 228, b: 236 };
-
-  function clamp(n, min = 0, max = 255) {
-    return Math.max(min, Math.min(max, Math.round(n)));
-  }
 
   function rgbToHsl(r, g, b) {
     r /= 255; g /= 255; b /= 255;
@@ -29,29 +26,23 @@
   }
 
   function usableColor(r, g, b) {
-    const { s, l } = rgbToHsl(r, g, b);
-    // Keep the effect soft and pastel rather than letting a neon/dark cover
-    // overpower the text and controls.
+    const { h, s, l } = rgbToHsl(r, g, b);
     const targetS = Math.max(18, Math.min(58, s * 0.72));
     const targetL = Math.max(72, Math.min(91, l < 50 ? 82 : l + 20));
-    return { h: rgbToHsl(r, g, b).h, s: targetS, l: targetL };
+    return { h, s: targetS, l: targetL };
   }
 
   function setTheme(card, rgb) {
     const c = usableColor(rgb.r, rgb.g, rgb.b);
-    const hue = c.h.toFixed(1);
-    const sat = c.s.toFixed(1);
-    const light = c.l.toFixed(1);
-    card.style.setProperty('--cover-h', hue);
-    card.style.setProperty('--cover-s', sat + '%');
-    card.style.setProperty('--cover-l', light + '%');
+    card.style.setProperty('--cover-h', c.h.toFixed(1));
+    card.style.setProperty('--cover-s', c.s.toFixed(1) + '%');
+    card.style.setProperty('--cover-l', c.l.toFixed(1) + '%');
     card.dataset.coverThemeReady = '1';
   }
 
   function sampleImage(img, callback) {
     const work = document.createElement('canvas');
-    work.width = 32;
-    work.height = 32;
+    work.width = 32; work.height = 32;
     const ctx = work.getContext('2d', { willReadFrequently: true });
     if (!ctx) return callback(FALLBACK);
     try {
@@ -59,17 +50,13 @@
       const data = ctx.getImageData(0, 0, 32, 32).data;
       let r = 0, g = 0, b = 0, count = 0;
       for (let i = 0; i < data.length; i += 4) {
-        const a = data[i + 3];
-        if (a < 150) continue;
+        if (data[i + 3] < 150) continue;
         const rr = data[i], gg = data[i + 1], bb = data[i + 2];
-        // Skip near-white background pixels so the cover itself has more say.
         if (rr > 245 && gg > 245 && bb > 245) continue;
         r += rr; g += gg; b += bb; count++;
       }
       callback(count ? { r: r / count, g: g / count, b: b / count } : FALLBACK);
-    } catch (_) {
-      callback(FALLBACK);
-    }
+    } catch (_) { callback(FALLBACK); }
   }
 
   function themeCard(card) {
@@ -77,16 +64,13 @@
     const img = card.querySelector('.cover img');
     if (!img) return;
     card.dataset.coverThemePending = '1';
-
     const finish = () => {
-      // Use an anonymous clone for sampling so we don't alter the visible image.
       const sampler = new Image();
       sampler.crossOrigin = 'anonymous';
       sampler.onload = () => sampleImage(sampler, rgb => setTheme(card, rgb));
       sampler.onerror = () => setTheme(card, FALLBACK);
       sampler.src = img.currentSrc || img.src;
     };
-
     if (img.complete && img.naturalWidth) finish();
     else img.addEventListener('load', finish, { once: true });
   }
