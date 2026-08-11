@@ -40,12 +40,11 @@
       const author=clean(pick(row,headers,['AUTHOR','BOOK AUTHOR','WRITER']));
       const pages=num(pick(row,headers,['PAGES','PAGE COUNT','NUMBER OF PAGES']));
       const rawStatus=clean(pick(row,headers,['STATUS','READING STATUS','BOOK STATUS']));
-      // Ignore blank/formatted spreadsheet rows. A real book must have a title and
-      // at least one other identifying/data field.
       if(!title || (!author && !pages && !rawStatus)) continue;
       const genre=clean(pick(row,headers,['GENRE','GENRES','TAGS','TROPES','GENRE TAGS']));
       const series=clean(pick(row,headers,['SERIES TITLE & NUMBER','SERIES TITLE','SERIES']));
-      const t=tags(genre); if(series)t.push(series);
+      // Series is book metadata, not a tag/trope. Do not put it into tags.
+      const t=tags(genre);
       imported.push({
         id:crypto.randomUUID(),title,author,status:statusOf(rawStatus),
         rating:num(pick(row,headers,['RATING','STAR RATING','STARS','MY RATING'])),pages,tags:t,
@@ -72,8 +71,6 @@
     }
     if(typeof XLSX==='undefined')throw new Error('Spreadsheet support did not load. Please refresh and try again.');
     const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
-    // Prefer the first sheet containing our real book headers; do not select a
-    // worksheet merely because it has many formatted/empty rows.
     let rows=null;
     for(const name of wb.SheetNames){
       const candidate=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',raw:false});
@@ -86,8 +83,6 @@
     const f=e.target.files[0];if(!f)return;
     try{
       const imported=await importFile(f), existing=Array.isArray(state.books)?state.books:[];
-      // If a previous broken import created hundreds of bogus rows, replace that
-      // bad bulk import with the real spreadsheet instead of merging into it.
       const badBulk=existing.length>500 && imported.length<500;
       let added=0,updated=0;
       if(badBulk){state.books=imported;added=imported.length;updated=0;}
