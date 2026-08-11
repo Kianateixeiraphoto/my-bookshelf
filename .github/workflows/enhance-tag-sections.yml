@@ -21,7 +21,6 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import re
 
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
@@ -54,7 +53,12 @@ jobs:
               raise SystemExit('Could not find the existing tag picker block.')
 
           text = text.replace(old, new, 1)
-          text = text.replace('const selected = Array.from($('bookTags').selectedOptions).map(o => o.value);', "const selected = Array.from(document.querySelectorAll('#bookTags input[type=\\\"checkbox\\\"]:checked')).map(o => o.value);")
+          old_selected = "const selected = Array.from($('bookTags').selectedOptions).map(o => o.value);"
+          new_selected = "const selected = Array.from(document.querySelectorAll('#bookTags input[type=\\\"checkbox\\\"]:checked')).map(o => o.value);"
+          if old_selected not in text:
+              raise SystemExit('Could not find the existing tag selection handler.')
+          text = text.replace(old_selected, new_selected, 1)
+
           text = text.replace('</style></head>', r'''<style>
           /* TAG-SECTIONS-V2 */
           .tag-picker{border:1px solid var(--line);border-radius:16px;background:#fffafb;padding:12px;margin-top:2px}
