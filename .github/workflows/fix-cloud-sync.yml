@@ -1,0 +1,33 @@
+name: Fix bookshelf cloud sync
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch sync logic
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="""async function sync(){if(!session){openAuth('login');return}try{await api('/rest/v1/books?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:'library',user_id:session.user.id,data:state,updated_at:new Date().toISOString()})});$('cloudStatus').textContent='Synced just now 💕'}catch(e){console.error(e);alert('I could not sync your bookshelf. Please make sure your Supabase table policies are enabled.')}}"""
+          new="""async function sync(){if(!session){openAuth('login');return}try{const uid=session.user.id;const rows=await api('/rest/v1/books?select=id&user_id=eq.'+encodeURIComponent(uid)+'&id=eq.library');const payload={id:'library',user_id:uid,data:state,updated_at:new Date().toISOString()};if(rows?.length){await api('/rest/v1/books?id=eq.library&user_id=eq.'+encodeURIComponent(uid),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({data:state,updated_at:payload.updated_at})})}else{await api('/rest/v1/books',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)})}$('cloudStatus').textContent='Synced just now 💕'}catch(e){console.error(e);$('cloudStatus').textContent='Sync failed';alert('Cloud sync failed: '+(e.message||e))}}"""
+          if old not in s:
+              raise SystemExit('target sync function not found')
+          p.write_text(s.replace(old,new))
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix cloud bookshelf sync'
+          git push
