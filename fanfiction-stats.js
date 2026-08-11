@@ -55,6 +55,31 @@
     return panel;
   }
 
+  function hideDuplicateStats(){
+    const fan=$('fanfictionPanel');
+    if(!fan)return;
+
+    // Keep the single combined Fanfiction Insights panel at the top.
+    // Hide only the old duplicate summary row containing Completed works / Total kudos.
+    fan.querySelectorAll('.stats').forEach(el=>{
+      if(el.closest('#ffInsights'))return;
+      const text=el.textContent||'';
+      if(/Completed works|Total kudos/i.test(text))el.style.display='none';
+    });
+
+    // Hide the old duplicate four-card Top Ratings/Categories/Fandoms/Relationships grid.
+    // The actual fanfiction work cards remain untouched.
+    fan.querySelectorAll('.reading-grid').forEach(el=>{
+      if(el.closest('#ffInsights'))return;
+      const text=el.textContent||'';
+      const hasTopRatings=/Top Ratings/i.test(text);
+      const hasTopCategories=/Top Categories/i.test(text);
+      const hasTopFandoms=/Top Fandoms/i.test(text);
+      const hasTopRelationships=/Top Relationships/i.test(text);
+      if(hasTopRatings&&hasTopCategories&&hasTopFandoms&&hasTopRelationships)el.style.display='none';
+    });
+  }
+
   function renderInsights(){
     const panel=ensurePanel(); if(!panel)return;
     const fics=getFics();
@@ -145,7 +170,7 @@
   let enrichBusy=false;
   async function enrichAll(force=false){
     if(enrichBusy)return;
-    const fics=getFics(); if(!fics.length){renderInsights();return}
+    const fics=getFics(); if(!fics.length){renderInsights();hideDuplicateStats();return}
     enrichBusy=true;
     try{
       for(const f of fics){
@@ -167,6 +192,7 @@
       save();
       renderInsights();
       enhanceCards();
+      hideDuplicateStats();
       if(typeof window.renderFanfiction==='function')window.renderFanfiction();
     }finally{enrichBusy=false}
   }
@@ -177,7 +203,7 @@
     if(typeof old==='function'&&!old.__ffWrapped){
       const wrapped=function(){
         const r=old.apply(this,arguments);
-        setTimeout(()=>{renderInsights();enhanceCards()},0);
+        setTimeout(()=>{renderInsights();enhanceCards();hideDuplicateStats()},0);
         return r;
       };
       wrapped.__ffWrapped=true;
@@ -185,6 +211,7 @@
     }
     renderInsights();
     enhanceCards();
+    hideDuplicateStats();
     enrichAll(false);
   }
 
