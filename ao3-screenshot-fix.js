@@ -30,9 +30,32 @@
   function attach(input){if(input.dataset.ao3FixAttached==='1')return;input.dataset.ao3FixAttached='1';input.onchange=async()=>{const file=input.files?.[0];if(!file)return;const form=document.getElementById('ficForm'),btn=document.getElementById('screenshotAO3Btn'),status=document.getElementById('ao3Status');if(!form||!btn||!status)return;try{btn.disabled=true;btn.textContent='🔎 Reading screenshot…';status.textContent='Reading AO3 metadata from your screenshot…';const raw=await ocr(file,p=>status.textContent=`Reading AO3 screenshot… ${p}%`);const d=parse(raw);populate(form,d);form.dataset.ao3Loaded=JSON.stringify({...d,source:'screenshot'});status.textContent='✓ Got it! I filled in the AO3 information. Please review it, then save. 💕';}catch(e){console.error('AO3 screenshot importer:',e);status.textContent=e?.message||'I could not read that screenshot. Try a clearer AO3 metadata screenshot.';}finally{btn.disabled=false;btn.textContent='📸 Upload AO3 Screenshot';input.value='';}};}
   const observer=new MutationObserver(()=>{const input=document.getElementById('ao3ScreenshotFile');if(input)attach(input);});observer.observe(document.documentElement,{childList:true,subtree:true});const existing=document.getElementById('ao3ScreenshotFile');if(existing)attach(existing);
 
-  // mobile-fixes.js is loaded here because the main page already includes this file.
-  // This guarantees the iPhone modal scrolling fix is actually applied.
-  const mobile=document.createElement('script');
-  mobile.src='mobile-fixes.js?v=2';
-  document.head.appendChild(mobile);
+  // Mobile AO3 modal repair. The AO3 form is injected dynamically, so fix the
+  // actual modal every time it opens rather than relying on a page-level stylesheet.
+  function installMobileAO3Fix(){
+    if(document.getElementById('ao3-mobile-scroll-fix'))return;
+    const style=document.createElement('style');style.id='ao3-mobile-scroll-fix';style.textContent=`
+      @media (max-width:700px){
+        #modal{display:none;align-items:flex-start!important;justify-content:center!important;padding:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important;height:100dvh!important;max-height:100dvh!important}
+        #modal.show{display:block!important}
+        #modalCard{width:100%!important;max-width:100%!important;min-height:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;border-radius:20px!important;padding:18px 14px 32px!important}
+        #modalCard form{height:auto!important;max-height:none!important;overflow:visible!important}
+        #modalCard .actions{position:static!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin-top:18px!important;padding:12px 0 24px!important;background:#fffafa!important}
+        #modalCard .actions button{min-height:48px!important;flex:1 1 140px!important}
+        #ficForm{padding-bottom:24px!important}
+        #ficForm button[type=submit]{position:sticky!important;bottom:8px!important;z-index:50!important;box-shadow:0 4px 16px rgba(90,45,63,.16)!important}
+      }
+    `;document.head.appendChild(style);
+  }
+  function repairModal(){
+    installMobileAO3Fix();
+    const modal=document.getElementById('modal'),card=document.getElementById('modalCard');
+    if(!modal||!card||!modal.classList.contains('show'))return;
+    if(window.matchMedia('(max-width:700px)').matches){
+      modal.scrollTop=0;card.scrollTop=0;
+      requestAnimationFrame(()=>{modal.scrollTop=0;card.scrollTop=0;});
+    }
+  }
+  installMobileAO3Fix();
+  new MutationObserver(repairModal).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
 })();
