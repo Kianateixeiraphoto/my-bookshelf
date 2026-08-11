@@ -1,0 +1,90 @@
+name: Enhance Tag Sections
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  enhance-tags:
+    if: ${{ !contains(github.event.head_commit.message, '[tags-ui-bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Update tag picker
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          if 'TAG-SECTIONS-V2' in text:
+              print('Grouped tag picker already present; nothing to do.')
+              raise SystemExit(0)
+
+          old = '''<label class="wide">Tags / tropes\n                  <select name="tags" id="bookTags" multiple size="7" style="width:100%;margin-top:6px">${selectedTags}</select>\n                  <div class="status" style="margin-top:5px">Hold Ctrl/Cmd to select multiple. Selected tags will be saved with the book.</div>\n                </label>'''
+
+          new = r'''<div class="wide tag-picker" id="bookTags" data-tag-sections-v2="true">
+                    <div class="tag-picker-head">
+                      <div><b>Tags / tropes</b><div class="status">Pick anything that applies — no Ctrl/Cmd required. You can select as many as you want.</div></div>
+                      <button class="btn" type="button" id="clearBookTags" style="padding:6px 10px;font-size:11px">Clear all</button>
+                    </div>
+                    <div class="tag-sections">
+                      ${Object.entries({
+                        'Pairing': ['MM','MF','FF','Poly','Why Choose','Reverse Harem'],
+                        'Orientation': ['Gay','Lesbian','Bisexual','Pansexual','Queer','Asexual','Demisexual','Questioning'],
+                        'Romance Tropes': ['Enemies to Lovers','Friends to Lovers','Friends with Benefits','Fake Dating','Forced Proximity','Only One Bed','Grumpy x Sunshine','Found Family','Second Chance','Forbidden Romance','Age Gap','Forbidden Love','Opposites Attract','Workplace Romance','Small Town Romance','Sports Romance','College Romance'],
+                        'Relationship / Dynamic': ['Possessive','Jealousy','Betrayal','Hurt/Comfort','Slow Burn','High Angst','Fluff','HEA','Happy for Now','Open Relationship','Established Relationship','Secret Relationship','Mutual Pining','Only One Bed'],
+                        'Spice / Vibes': ['Sweet','Spicy','Very Spicy','Dark Romance','Dark','Cozy','Angsty','Emotional','Funny','Protective','Morally Gray','Touch Her/Him and Die'],
+                        'Fantasy / Paranormal': ['Shifters','Vampires','Werewolves','Omegaverse','Mpreg','Witches','Fae','Demons','Monsters','Magic','Supernatural'],
+                        'Genre / Setting': ['Contemporary','Historical','Fantasy','Paranormal','Sci-Fi','RomCom','Mystery','Thriller','Horror','Mafia','Billionaire','Military','Law Enforcement','Cowboys','Academia','High School','College','Workplace','Small Town','Road Trip']
+                      }).map(([section, options]) => `<section class="tag-section"><h4>${esc(section)}</h4><div class="tag-options">${options.map(t => `<label class="tag-option"><input type="checkbox" value="${esc(t)}" ${tags.includes(t) ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}</div></section>`).join('')}
+                    </div>
+                  </div>'''
+
+          if old not in text:
+              raise SystemExit('Could not find the existing tag picker block.')
+
+          text = text.replace(old, new, 1)
+          text = text.replace('const selected = Array.from($('bookTags').selectedOptions).map(o => o.value);', "const selected = Array.from(document.querySelectorAll('#bookTags input[type=\\\"checkbox\\\"]:checked')).map(o => o.value);")
+          text = text.replace('</style></head>', r'''<style>
+          /* TAG-SECTIONS-V2 */
+          .tag-picker{border:1px solid var(--line);border-radius:16px;background:#fffafb;padding:12px;margin-top:2px}
+          .tag-picker-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+          .tag-picker-head b{font-size:14px;color:#684352}
+          .tag-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:330px;overflow:auto;padding-right:4px}
+          .tag-section{border:1px solid #f0dfe5;border-radius:13px;background:rgba(255,255,255,.72);padding:10px}
+          .tag-section h4{margin:0 0 8px;font-family:Georgia,serif;font-size:14px;color:#765064}
+          .tag-options{display:flex;flex-wrap:wrap;gap:6px}
+          .tag-option{display:inline-flex;align-items:center;gap:6px;border:1px solid #efdce3;background:#fff8fb;border-radius:999px;padding:6px 9px;font-size:11px;color:#684352;cursor:pointer;user-select:none}
+          .tag-option:hover{border-color:var(--accent);background:var(--accent2)}
+          .tag-option input{width:14px;height:14px;margin:0;accent-color:var(--accent)}
+          .tag-option:has(input:checked){background:#fde3ed;border-color:#e99ab5;color:#8a4d67;font-weight:600}
+          @media(max-width:700px){.tag-sections{grid-template-columns:1fr}.tag-picker-head{align-items:flex-start}.tag-option{font-size:10.5px}}
+          </style></head>''', 1)
+
+          path.write_text(text, encoding='utf-8')
+          print('Grouped multi-section tag picker added.')
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Add grouped multi-select tags [tags-ui-bot]"
+          git push
+
+      - name: Deploy updated site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
