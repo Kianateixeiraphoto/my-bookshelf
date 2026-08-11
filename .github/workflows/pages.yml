@@ -29,6 +29,21 @@ jobs:
         with:
           enablement: true
 
+      - name: Inject runtime fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          tag = '<script src="spice-fix.js"></script>'
+          if tag not in text:
+              marker = '</body>'
+              if marker not in text:
+                  raise SystemExit('Could not find </body> in index.html')
+              text = text.replace(marker, tag + marker, 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
