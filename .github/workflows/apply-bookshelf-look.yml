@@ -75,3 +75,5 @@ jobs:
             git commit -m 'Apply cozy bookshelf card design'
             git push
           fi
+
+      # Keep the styling workflow easy to recognize in Actions.
