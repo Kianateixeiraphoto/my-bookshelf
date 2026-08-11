@@ -23,26 +23,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Add stats cleanup script
-        run: python - <<'PY'
-          from pathlib import Path
-          p = Path('index.html')
-          text = p.read_text(encoding='utf-8')
-          marker = '<script src="stats-fix.js"></script>'
-          if marker not in text:
-              text = text.replace('</body>', marker + '</body>')
-              p.write_text(text, encoding='utf-8')
-        PY
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-# Trigger a fresh Pages deployment after application repairs.
