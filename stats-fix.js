@@ -9,7 +9,7 @@
 
   function renderCleanStats() {
     const p = document.getElementById('statsPanel');
-    if (!p || !window.state) return;
+    if (!p || typeof state === 'undefined') return;
 
     const books = Array.isArray(state.books) ? state.books : [];
     const read = books.filter(b => String(b.status || '').trim().toLowerCase() === 'read');
@@ -32,8 +32,8 @@
       });
     });
 
-    const pieHtml = typeof window.pie === 'function' ? window.pie(byTag) : '<div class="empty">Not enough data yet.</div>';
-    const statusPie = typeof window.pie === 'function' ? window.pie(byStatus) : '';
+    const pieHtml = typeof pie === 'function' ? pie(byTag) : '<div class="empty">Not enough data yet.</div>';
+    const statusPie = typeof pie === 'function' ? pie(byStatus) : '';
     const pages = read.reduce((a, b) => a + (Number(b.pages) || 0), 0).toLocaleString();
     const ratedRead = read.filter(b => Number(b.rating) > 0);
     const avg = ratedRead.length
@@ -54,8 +54,8 @@
   }
 
   function install() {
-    if (typeof window.renderStats !== 'function') return false;
-    window.renderStats = renderCleanStats;
+    if (typeof renderStats !== 'function') return false;
+    renderStats = renderCleanStats;
     renderCleanStats();
     return true;
   }
