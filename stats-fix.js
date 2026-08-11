@@ -1,33 +1,34 @@
-/* My Bookshelf — stats cleanup
- * Keeps series names out of the Tags / tropes chart.
- * A tag is ignored for a book when it matches that book's Series value.
+/* My Bookshelf — stats cleanup v2
+ * Series is metadata, never a Tags / tropes chart value.
+ * This also cleans legacy imports where series values were accidentally copied into tags.
  */
 (() => {
-  function cleanKey(value) {
-    return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
+  const cleanKey = value => String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
   function renderCleanStats() {
     const p = document.getElementById('statsPanel');
     if (!p || typeof state === 'undefined') return;
 
     const books = Array.isArray(state.books) ? state.books : [];
-    const read = books.filter(b => String(b.status || '').trim().toLowerCase() === 'read');
+    const read = books.filter(b => cleanKey(b.status) === 'read');
     const byStatus = {};
     const byTag = {};
 
+    // Build a global set as well as per-book values. This catches legacy records
+    // where the series field was lost but the series name remained in tags.
+    const allSeries = new Set(
+      books.map(b => cleanKey(b.series)).filter(Boolean)
+    );
+
     books.forEach(b => {
-      const status = b.status || 'Other';
+      const status = String(b.status || 'Other').trim() || 'Other';
       byStatus[status] = (byStatus[status] || 0) + 1;
 
-      const seriesKey = cleanKey(b.series);
-      const tags = Array.isArray(b.tags) ? b.tags : [];
-      tags.forEach(tag => {
+      const ownSeries = cleanKey(b.series);
+      (Array.isArray(b.tags) ? b.tags : []).forEach(tag => {
         const label = String(tag || '').trim();
-        if (!label) return;
-        // Series names were historically imported into the tags array.
-        // If a tag is this book's series value, leave it out of the Tags / tropes chart.
-        if (seriesKey && cleanKey(label) === seriesKey) return;
+        const key = cleanKey(label);
+        if (!label || (ownSeries && key === ownSeries) || allSeries.has(key)) return;
         byTag[label] = (byTag[label] || 0) + 1;
       });
     });
@@ -56,23 +57,13 @@
   function install() {
     if (typeof renderStats !== 'function') return false;
     renderStats = renderCleanStats;
-    renderCleanStats();
     return true;
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      let tries = 0;
-      const timer = setInterval(() => {
-        tries += 1;
-        if (install() || tries > 40) clearInterval(timer);
-      }, 100);
-    });
-  } else {
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      if (install() || tries > 40) clearInterval(timer);
-    }, 100);
-  }
+  // Install after the main app script has defined renderStats.
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries += 1;
+    if (install() || tries > 100) clearInterval(timer);
+  }, 100);
 })();
