@@ -131,3 +131,14 @@
     if (install() || tries > 100) clearInterval(timer);
   }, 100);
 })();
+
+/* Load the AO3 importer after the main app has defined state/render helpers. */
+(() => {
+  const id = 'ao3-import-script';
+  if (document.getElementById(id)) return;
+  const script = document.createElement('script');
+  script.id = id;
+  script.src = 'ao3-import.js?v=1';
+  script.defer = false;
+  document.head.appendChild(script);
+})();
