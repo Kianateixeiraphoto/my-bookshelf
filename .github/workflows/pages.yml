@@ -41,7 +41,7 @@ jobs:
           tags = [
               '<script src="spice-fix.js?v=2"></script>',
               '<script src="stats-fix.js?v=4"></script>',
-              '<script src="fanfiction-stats.js?v=1"></script>'
+              '<script src="fanfiction-stats.js?v=2"></script>'
           ]
           for tag in tags:
               filename = tag.split('src="', 1)[1].split('?', 1)[0]
