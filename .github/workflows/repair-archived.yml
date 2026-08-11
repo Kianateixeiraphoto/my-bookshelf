@@ -1,0 +1,32 @@
+name: Repair archived bookshelf
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore archived books section
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          new_render = r'''function render(){const books=state.books||[],norm=b=>String(b.status||'').trim().toLowerCase(),read=books.filter(b=>norm(b)==='read'),reading=books.filter(b=>norm(b)==='currently reading');$('totalBooks').textContent=books.length;$('readBooks').textContent=read.length;$('readingBooks').textContent=reading.length;const rated=books.filter(b=>Number(b.rating)>0);$('avgRating').textContent=rated.length?(rated.reduce((a,b)=>a+Number(b.rating),0)/rated.length).toFixed(1):'—';$('pagesRead').textContent=read.reduce((a,b)=>a+(Number(b.pages)||0),0).toLocaleString();$('favorites').textContent=books.filter(b=>b.favorite).length;const q=($('bookSearch').value||'').toLowerCase(),sf=String($('statusFilter').value||'').trim().toLowerCase(),rf=Number($('ratingFilter').value||0),filtered=books.filter(b=>(!q||JSON.stringify(b).toLowerCase().includes(q))&&(!sf||norm(b)===sf)&&(!rf||Number(b.rating)>=rf)),cur=filtered.filter(b=>norm(b)==='currently reading'),dnf=filtered.filter(b=>norm(b)==='dnf'),arch=filtered.filter(b=>['read','finished','complete','completed','archived'].includes(norm(b))),other=filtered.filter(b=>!['currently reading','dnf','read','finished','complete','completed','archived'].includes(norm(b)));if(other.length)arch=arch.concat(other);$('currentlySection').innerHTML='<div class="section-title">📖 Currently Reading</div><div class="section-sub">Your current reads always stay right up top. 💕</div>'+(cur.length?'<div class="shelf">'+cur.map(bookCard).join('')+'</div>':'<div class="panel empty">Nothing currently reading. Time to pick a new victim. 😂📚</div>');$('dnfSection').innerHTML='<div class="section-title">🚫 DNF — Did Not Finish</div><div class="section-sub">Books you decided not to finish live here. No judgment. 💕</div>'+(dnf.length?'<div class="shelf">'+dnf.map(bookCard).join('')+'</div>':'<div class="panel empty">No DNF books yet.</div>');$('archivedSection').innerHTML='<div class="section-title">📚 Archived Books</div><div class="section-sub">Finished and already-read books live here.</div>'+(arch.length?'<div class="shelf">'+arch.map(bookCard).join('')+'</div>':'<div class="panel empty">No archived books yet.</div>');renderStats();renderBuy();renderFanfiction()}'''
+          pattern = r'function render\(\)\{.*?\}\nfunction bookCard'
+          replacement = new_render + '\nfunction bookCard'
+          s2, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'Could not locate render function (matches={n})')
+          p.write_text(s2, encoding='utf-8')
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Restore archived books section [skip ci]'
+          git push
