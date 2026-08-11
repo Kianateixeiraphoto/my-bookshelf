@@ -1,6 +1,6 @@
-/* My Bookshelf — stats cleanup v3
- * Reading Stats are split by the same tag/trope sections used in Edit Book.
- * Series remains metadata and is never counted as a tag/trope.
+/* My Bookshelf — Reading Stats grouped charts
+ * Splits tag/trope statistics into the same sections used by Edit Book.
+ * Series is metadata and is never counted as a tag/trope.
  * Spice rating is tracked separately from the Spice / Vibes tag section.
  */
 (() => {
@@ -20,38 +20,40 @@
     const allowed = new Set(options.map(cleanKey));
     const counts = {};
     options.forEach(option => { counts[option] = 0; });
-
     books.forEach(book => {
       const seen = new Set();
       (Array.isArray(book.tags) ? book.tags : []).forEach(tag => {
-        const label = String(tag || '').trim();
-        const key = cleanKey(label);
+        const key = cleanKey(tag);
         if (allowed.has(key) && !seen.has(key)) {
-          const canonical = options.find(option => cleanKey(option) === key) || label;
+          const canonical = options.find(option => cleanKey(option) === key) || tag;
           counts[canonical] = (counts[canonical] || 0) + 1;
           seen.add(key);
         }
       });
     });
-
     return Object.fromEntries(Object.entries(counts).filter(([, count]) => count > 0));
   }
 
+  function canonicalSpice(value) {
+    const s = String(value ?? '').trim().toLowerCase();
+    if (!s || s === 'not rated' || s === '0' || s === '0 chilis') return 'Not rated';
+    const match = s.match(/[1-5]/);
+    if (!match) return 'Not rated';
+    const n = Number(match[0]);
+    return n === 1 ? '🌶️ 1 chili' : `🌶️ ${n} chilis`;
+  }
+
   function spiceCounts(books) {
-    const order = ['Not rated', '1 chili', '2 chilis', '3 chilis', '4 chilis', '5 chilis'];
-    const counts = Object.fromEntries(order.map(x => [x, 0]));
-    books.forEach(book => {
-      let spice = String(book.spice || '').trim();
-      if (!spice || spice === 'Not rated' || !(spice in counts)) spice = 'Not rated';
-      counts[spice] += 1;
-    });
-    return Object.fromEntries(order.map(key => [key, counts[key]]).filter(([, count]) => count > 0));
+    const order = ['Not rated','🌶️ 1 chili','🌶️ 2 chilis','🌶️ 3 chilis','🌶️ 4 chilis','🌶️ 5 chilis'];
+    const counts = Object.fromEntries(order.map(key => [key, 0]));
+    books.forEach(book => { counts[canonicalSpice(book.spice || book.spiceRating || book.spice_level)] += 1; });
+    return Object.fromEntries(order.filter(key => counts[key] > 0).map(key => [key, counts[key]]));
   }
 
   function ensureStatsStyles() {
-    if (document.getElementById('stats-sections-v3')) return;
+    if (document.getElementById('stats-sections-v4')) return;
     const style = document.createElement('style');
-    style.id = 'stats-sections-v3';
+    style.id = 'stats-sections-v4';
     style.textContent = `
       .stats-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
       .stats-chart-panel{min-width:0}
@@ -70,67 +72,51 @@
 
   function pieCard(title, counts) {
     if (!Object.keys(counts).length) {
-      return '<div class="panel stats-chart-panel"><h3>' + esc(title) + '</h3><div class="stats-empty">No books have been tagged in this section yet.</div></div>';
+      return `<div class="panel stats-chart-panel"><h3>${esc(title)}</h3><div class="stats-empty">No books have been tagged in this section yet.</div></div>`;
     }
-
     const vals = Object.entries(counts);
     const total = vals.reduce((sum, [, value]) => sum + value, 0);
     const colors = ['#e99ab5','#c9a0e9','#8fd3c7','#f2bd73','#9bb8e8','#e8a5a5','#d99bb6','#a9c8a5','#c3a6df','#efb0a8','#9fc9d9','#e7c07b'];
     let start = 0;
     const stops = vals.map(([, value], index) => {
       const end = start + value / total * 360;
-      const stop = colors[index % colors.length] + ' ' + start + 'deg ' + end + 'deg';
+      const stop = `${colors[index % colors.length]} ${start}deg ${end}deg`;
       start = end;
       return stop;
     }).join(',');
-
     const legend = vals.map(([key, value], index) =>
-      '<div class="stats-legend-row"><span class="stats-legend-dot" style="background:' + colors[index % colors.length] + '"></span><span>' + esc(key) + ': ' + value + '</span></div>'
+      `<div class="stats-legend-row"><span class="stats-legend-dot" style="background:${colors[index % colors.length]}"></span><span>${esc(key)}: ${value}</span></div>`
     ).join('');
-
-    return '<div class="panel stats-chart-panel"><h3>' + esc(title) + '</h3><div class="pie-wrap" style="display:flex;gap:22px;flex-wrap:wrap"><div class="pie-circle" style="border-radius:50%;background:conic-gradient(' + stops + ')"></div><div class="stats-legend">' + legend + '</div></div></div>';
+    return `<div class="panel stats-chart-panel"><h3>${esc(title)}</h3><div class="pie-wrap" style="display:flex;gap:22px;flex-wrap:wrap"><div class="pie-circle" style="border-radius:50%;background:conic-gradient(${stops})"></div><div class="stats-legend">${legend}</div></div></div>`;
   }
 
   function renderCleanStats() {
     const p = document.getElementById('statsPanel');
     if (!p || typeof state === 'undefined') return;
-
     ensureStatsStyles();
-
     const books = Array.isArray(state.books) ? state.books : [];
     const read = books.filter(b => cleanKey(b.status) === 'read');
     const byStatus = {};
-
     books.forEach(book => {
       const status = String(book.status || 'Other').trim() || 'Other';
       byStatus[status] = (byStatus[status] || 0) + 1;
     });
-
     const pages = read.reduce((sum, book) => sum + (Number(book.pages) || 0), 0).toLocaleString();
     const ratedRead = read.filter(book => Number(book.rating) > 0);
-    const avg = ratedRead.length
-      ? (ratedRead.reduce((sum, book) => sum + Number(book.rating || 0), 0) / ratedRead.length).toFixed(1)
-      : '—';
+    const avg = ratedRead.length ? (ratedRead.reduce((sum, book) => sum + Number(book.rating || 0), 0) / ratedRead.length).toFixed(1) : '—';
     const favorites = books.filter(book => book.favorite).length;
-
-    const sectionCharts = Object.entries(TAG_SECTIONS)
-      .map(([name, options]) => pieCard(name, countsForSection(books, options)))
-      .join('');
-
+    const sectionCharts = Object.entries(TAG_SECTIONS).map(([name, options]) => pieCard(name, countsForSection(books, options))).join('');
     const spiceChart = pieCard('🌶️ Spice Rating', spiceCounts(books));
-
-    p.innerHTML = '<div class="section-title">📊 Reading Stats</div>' +
-      '<div class="section-sub">Your reading numbers at a glance. Now organized by your tag & trope sections. 🎀</div>' +
-      '<div class="reading-grid">' +
-        '<div class="reading-card"><b>' + read.length + '</b><span>Books finished</span></div>' +
-        '<div class="reading-card"><b>' + pages + '</b><span>Pages read</span></div>' +
-        '<div class="reading-card"><b>' + avg + '</b><span>Average rating</span></div>' +
-        '<div class="reading-card"><b>' + favorites + '</b><span>Favorites</span></div>' +
-      '</div>' +
-      '<div class="panel" style="margin-top:14px"><h3>Books by status</h3>' +
-        (typeof pie === 'function' ? pie(byStatus) : '<div class="stats-empty">Not enough data yet.</div>') +
-      '</div>' +
-      '<div class="stats-chart-grid">' + sectionCharts + spiceChart + '</div>';
+    p.innerHTML = `<div class="section-title">📊 Reading Stats</div>
+      <div class="section-sub">Your reading numbers at a glance — organized by your Edit Book tag sections. 🎀</div>
+      <div class="reading-grid">
+        <div class="reading-card"><b>${read.length}</b><span>Books finished</span></div>
+        <div class="reading-card"><b>${pages}</b><span>Pages read</span></div>
+        <div class="reading-card"><b>${avg}</b><span>Average rating</span></div>
+        <div class="reading-card"><b>${favorites}</b><span>Favorites</span></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><h3>Books by status</h3>${typeof pie === 'function' ? pie(byStatus) : '<div class="stats-empty">Not enough data yet.</div>'}</div>
+      <div class="stats-chart-grid">${sectionCharts}${spiceChart}</div>`;
   }
 
   function install() {
