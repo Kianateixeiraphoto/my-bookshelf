@@ -1,4 +1,4 @@
-name: Add cover finder to bookshelf
+name: Add cover finder and stats cleanup to bookshelf
 
 on:
   push:
@@ -9,35 +9,44 @@ permissions:
 
 jobs:
   inject:
-    if: ${{ !contains(github.event.head_commit.message, 'cover-loader injection') }}
+    if: ${{ !contains(github.event.head_commit.message, 'cover-loader injection') && !contains(github.event.head_commit.message, 'stats-fix injection') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Inject cover finder script
+      - name: Inject bookshelf helper scripts
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           text = p.read_text(encoding='utf-8')
-          tag = '<script src="cover-loader.js"></script>'
-          if tag not in text:
-              marker = '</body>'
-              if marker not in text:
-                  raise SystemExit('Could not find </body> in index.html')
-              text = text.replace(marker, tag + marker, 1)
+          changed = False
+
+          for filename, marker in [
+              ('cover-loader.js', 'cover-loader injection'),
+              ('stats-fix.js', 'stats-fix injection'),
+          ]:
+              tag = f'<script src="{filename}"></script>'
+              if tag not in text:
+                  body = '</body>'
+                  if body not in text:
+                      raise SystemExit('Could not find </body> in index.html')
+                  text = text.replace(body, tag + body, 1)
+                  changed = True
+                  print(f'Injected {filename}.')
+
+          if changed:
               p.write_text(text, encoding='utf-8')
-              print('Cover finder injected.')
           else:
-              print('Cover finder already injected.')
+              print('Helper scripts already injected.')
           PY
 
-      - name: Commit cover finder injection
+      - name: Commit helper script injection
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Add cover-loader injection'
+          git commit -m 'Add stats-fix injection'
           git push
