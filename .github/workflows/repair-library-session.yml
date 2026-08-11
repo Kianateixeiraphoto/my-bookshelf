@@ -23,21 +23,15 @@ jobs:
           if supabase not in s:
               if marker not in s: raise SystemExit('SheetJS marker not found')
               s=s.replace(marker,marker+'\n'+supabase,1)
-          auth_patch=r'''<script>
-          const bookshelfSupabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'my-bookshelf-supabase-auth'}});
+          auth_patch=r'''const bookshelfSupabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'my-bookshelf-supabase-auth'}});
           bookshelfSupabase.auth.onAuthStateChange((_event,s)=>{if(s){session=s;setSession(s)}else if(session){session=null;setSession(null)}});
           async function restoreSession(){try{const r=await bookshelfSupabase.auth.getSession();const s=r.data.session;if(!s){session=null;return}session=s;setSession(s)}catch(e){console.warn('Supabase session restore failed',e);session=null;setSession(null)}}
           function openAuth(mode='login'){const signup=mode==='signup';openModal('<div class="row"><h2>🎀 '+(signup?'Create your My Bookshelf account':'Welcome back')+'</h2><button class="btn" onclick="closeModal()">Cancel</button></div><form id="authForm"><label>Email</label><input id="authEmail" type="email" autocomplete="email" required style="width:100%;margin:6px 0 12px"><label>Password</label><div style="display:flex;gap:6px"><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required style="flex:1"><button class="btn" type="button" id="showPw">Show</button></div><div class="actions" style="margin-top:16px"><button class="btn" type="button" id="switchAuth">'+(signup?'Already have an account? Log in':'Need an account? Create one')+'</button><button class="btn primary" type="submit">'+(signup?'Create Account':'Log In')+'</button></div><p id="authMsg" class="status"></p></form>');$('showPw').onclick=()=>{$('authPassword').type=$('authPassword').type==='password'?'text':'password';$('showPw').textContent=$('authPassword').type==='password'?'Show':'Hide'};$('switchAuth').onclick=()=>{closeModal();openAuth(signup?'login':'signup')};$('authForm').onsubmit=async e=>{e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value,msg=$('authMsg');msg.textContent='Working…';try{const r=signup?await bookshelfSupabase.auth.signUp({email,password}):await bookshelfSupabase.auth.signInWithPassword({email,password});if(r.error)throw r.error;if(!r.data.session){msg.textContent='Account created! Check your email to confirm it, then log in.';return}session=r.data.session;setSession(session);closeModal();await cloudLoad();render()}catch(err){msg.textContent=err.message||'Authentication failed'}}}
-          </script>'''
+          '''
           if 'const bookshelfSupabase=' not in s:
-              needle='<script>\nconst SUPABASE_URL='
-              if needle not in s: raise SystemExit('app script marker not found')
-              s=s.replace(needle,'<script>\nconst SUPABASE_URL=',1)
-              # inject auth patch after the app script's SUPABASE_KEY declaration so constants exist
               keyline="const SUPABASE_KEY='sb_publishable_awbAAru2iWbHsjabVF83Gw_FhpiSG0z';"
               if keyline not in s: raise SystemExit('Supabase key declaration not found')
               s=s.replace(keyline,keyline+'\n'+auth_patch,1)
-          # Replace the old sign-out handler with Supabase's supported signOut.
           old=re.search(r"\$\('authBtn'\)\.onclick=\(\)=>openAuth\('login'\);\$\('signOutBtn'\)\.onclick=async\(\)=>\{.*?\}\nloadLocal\(\);render\(\);",s,re.S)
           if old:
               replacement="$('authBtn').onclick=()=>openAuth('login');$('signOutBtn').onclick=async()=>{try{await bookshelfSupabase.auth.signOut()}catch(e){console.warn(e)}session=null;setSession(null);loadLocal();render();$('cloudStatus').textContent='Signed out'}\nloadLocal();render();"
