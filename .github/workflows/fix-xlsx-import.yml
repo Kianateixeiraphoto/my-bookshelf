@@ -1,0 +1,46 @@
+name: Enable Excel spreadsheet imports
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch spreadsheet importer
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          marker = '<script>\nconst SUPABASE_URL='
+          library = '<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>\n'
+          if library not in s:
+              s = s.replace(marker, library + marker, 1)
+
+          old_input = '<input id="fileInput" type="file" accept="application/json,.json" style="display:none">'
+          new_input = '<input id="fileInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json,.json" style="display:none">'
+          s = s.replace(old_input, new_input, 1)
+
+          old_handler = "$('importBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{state={...state,...JSON.parse(r.result)};saveLocal();render();sync();alert('Imported!')}catch{alert('That file could not be imported.')}};r.readAsText(f)};"
+          new_handler = r'''$('importBtn').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const ext=f.name.toLowerCase().split('.').pop();if(ext==='json'){const text=await f.text();state={...state,...JSON.parse(text)};}else{if(typeof XLSX==='undefined')throw Error('Spreadsheet support is still loading. Please try again in a moment.');const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});if(!rows.length)throw Error('The spreadsheet appears to be empty.');const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');const pick=(r,names)=>{for(const n of names){const k=Object.keys(r).find(x=>norm(x)===norm(n));if(k&&r[k]!==''&&r[k]!=null)return r[k];}return '';};const asNumber=v=>{const n=Number(String(v??'').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};const asTags=v=>String(v??'').split(/[,;|]/).map(x=>x.trim()).filter(Boolean);const imported=rows.map((r,i)=>{const title=pick(r,['Title','Book Title','Name']);const author=pick(r,['Author','Book Author','Writer']);const statusRaw=pick(r,['Status','Reading Status','Book Status']);const statusText=String(statusRaw||'').trim().toLowerCase();let status='Read';if(/currently|reading|in progress|reading now/.test(statusText))status='Currently Reading';else if(/dnf|did not finish|abandon/.test(statusText))status='DNF';else if(/want|tbr|wishlist|to read/.test(statusText))status='Want to Read';else if(/unread|not read|no/.test(statusText)&&!statusText.includes('read'))status='Want to Read';return{id:crypto.randomUUID(),title:String(title||('Imported Book '+(i+1))),author:String(author||''),status,rating:asNumber(pick(r,['Rating','Star Rating','Stars','My Rating'])),pages:asNumber(pick(r,['Pages','Page Count','Number of Pages'])),tags:asTags(pick(r,['Tags','Tropes','Genre','Genres','Genre Tags'])),notes:String(pick(r,['Notes','Review','Comments'])),cover:String(pick(r,['Cover','Cover URL','Cover Image','Image URL'])),favorite:/^(yes|true|1|y)$/i.test(String(pick(r,['Favorite','Favorites'])))});}).filter(b=>b.title);const existing=new Map((state.books||[]).map(b=>[norm(b.title)+'|'+norm(b.author),b]));let added=0,updated=0;for(const b of imported){const key=norm(b.title)+'|'+norm(b.author);if(existing.has(key)){const old=existing.get(key);Object.assign(old,{...b,id:old.id});updated++;}else{(state.books||[]).push(b);added++;}}}saveLocal();render();await sync();alert('Spreadsheet imported! Added '+added+' books and updated '+updated+'.');}catch(err){console.error(err);alert('I could not import that file. '+(err.message||err));}finally{e.target.value='';}};'''
+          if old_handler not in s:
+              raise SystemExit('Expected import handler was not found; no changes made.')
+          s = s.replace(old_handler, new_handler, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Add XLSX and CSV spreadsheet import support"
+          git push
