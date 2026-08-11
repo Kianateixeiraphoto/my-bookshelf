@@ -1,6 +1,6 @@
-/* My Bookshelf — automatic cover finder
+/* My Bookshelf — automatic + per-book cover finder
  * Uses public Google Books data first, then Open Library as a fallback.
- * Covers can be manually approved and are then kept across refreshes.
+ * Covers can be manually chosen/approved and kept across refreshes.
  */
 (() => {
   const CACHE_KEY = 'my-bookshelf-cover-cache-v1';
@@ -12,27 +12,89 @@
   const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const keyFor = (title, author) => `${norm(title)}||${norm(author)}`;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  function titleScore(a, b) { const x = norm(a), y = norm(b); if (!x || !y) return 0; if (x === y) return 100; if (x.includes(y) || y.includes(x)) return 75; const aw = new Set(x.split(' ')), bw = new Set(y.split(' ')); let hits = 0; bw.forEach(w => { if (aw.has(w)) hits++; }); return Math.round(60 * hits / Math.max(aw.size, bw.size)); }
-  function authorScore(bookAuthor, authors) { const a = norm(bookAuthor); if (!a || !authors?.length) return 0; return Math.max(...authors.map(x => { const b = norm(x); if (a === b) return 40; const last = a.split(' ').pop(); return b.includes(a) || a.includes(b) || (last && b.includes(last)) ? 25 : 0; })); }
-  async function googleCover(title, author) { const q = `intitle:${title}${author ? ` inauthor:${author}` : ''}`; const url = `https://www.googleapis.com/books/v1/volumes?${new URLSearchParams({q, maxResults:'8', printType:'books'})}`; const r = await fetch(url); if (!r.ok) throw new Error('Google Books request failed'); const data = await r.json(); const items = data.items || []; let best = null, bestScore = 0; for (const item of items) { const info = item.volumeInfo || {}; const score = titleScore(title, info.title) + authorScore(author, info.authors || []); const image = info.imageLinks?.extraLarge || info.imageLinks?.large || info.imageLinks?.medium || info.imageLinks?.small || info.imageLinks?.thumbnail; if (image && score > bestScore) { best = image.replace(/^http:/, 'https:'); bestScore = score; } } return bestScore >= (author ? 65 : 60) ? best : null; }
-  async function openLibraryCover(title, author) { const params = new URLSearchParams({title, limit:'8'}); if (author) params.set('author', author); const r = await fetch(`https://openlibrary.org/search.json?${params}`); if (!r.ok) throw new Error('Open Library request failed'); const data = await r.json(); const docs = data.docs || []; let best = null, bestScore = 0; for (const doc of docs) { const score = titleScore(title, doc.title) + authorScore(author, doc.author_name || []); if (doc.cover_i && score > bestScore) { best = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`; bestScore = score; } } return bestScore >= (author ? 55 : 50) ? best : null; }
+  const escHtml = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function titleScore(a, b) {
+    const x = norm(a), y = norm(b);
+    if (!x || !y) return 0;
+    if (x === y) return 100;
+    if (x.includes(y) || y.includes(x)) return 75;
+    const aw = new Set(x.split(' ')), bw = new Set(y.split(' '));
+    let hits = 0;
+    bw.forEach(w => { if (aw.has(w)) hits++; });
+    return Math.round(60 * hits / Math.max(aw.size, bw.size));
+  }
+  function authorScore(bookAuthor, authors) {
+    const a = norm(bookAuthor);
+    if (!a || !authors?.length) return 0;
+    return Math.max(...authors.map(x => {
+      const b = norm(x);
+      if (a === b) return 40;
+      const last = a.split(' ').pop();
+      return b.includes(a) || a.includes(b) || (last && b.includes(last)) ? 25 : 0;
+    }));
+  }
+
+  async function googleCandidates(title, author) {
+    const q = `intitle:${title}${author ? ` inauthor:${author}` : ''}`;
+    const url = `https://www.googleapis.com/books/v1/volumes?${new URLSearchParams({q, maxResults:'10', printType:'books'})}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Google Books request failed');
+    const data = await r.json();
+    return (data.items || []).map(item => {
+      const info = item.volumeInfo || {};
+      const image = info.imageLinks?.extraLarge || info.imageLinks?.large || info.imageLinks?.medium || info.imageLinks?.small || info.imageLinks?.thumbnail;
+      if (!image) return null;
+      const score = titleScore(title, info.title) + authorScore(author, info.authors || []);
+      return { url:image.replace(/^http:/,'https:'), title:info.title || '', author:(info.authors || []).join(', '), score, source:'Google Books' };
+    }).filter(x => x && x.score >= (author ? 45 : 40));
+  }
+
+  async function openLibraryCandidates(title, author) {
+    const params = new URLSearchParams({title, limit:'10'});
+    if (author) params.set('author', author);
+    const r = await fetch(`https://openlibrary.org/search.json?${params}`);
+    if (!r.ok) throw new Error('Open Library request failed');
+    const data = await r.json();
+    return (data.docs || []).map(doc => {
+      if (!doc.cover_i) return null;
+      const score = titleScore(title, doc.title) + authorScore(author, doc.author_name || []);
+      return { url:`https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`, title:doc.title || '', author:(doc.author_name || []).join(', '), score, source:'Open Library' };
+    }).filter(x => x && x.score >= (author ? 40 : 35));
+  }
+
+  async function getCandidates(title, author) {
+    const key = keyFor(title, author);
+    const all = [];
+    try { all.push(...await googleCandidates(title, author)); } catch {}
+    try { all.push(...await openLibraryCandidates(title, author)); } catch {}
+    const seen = new Set();
+    return all.sort((a,b) => b.score - a.score).filter(x => {
+      if (seen.has(x.url)) return false;
+      seen.add(x.url);
+      return true;
+    }).slice(0, 8).map((x, i) => ({...x, index:i}));
+  }
+
   async function findCover(title, author) {
     const key = keyFor(title, author);
     if (Object.prototype.hasOwnProperty.call(approved, key)) return approved[key];
     if (Object.prototype.hasOwnProperty.call(cache, key)) return cache[key];
-    let url = null;
-    try { url = await googleCover(title, author); } catch {}
-    if (!url) { try { url = await openLibraryCover(title, author); } catch {} }
+    const candidates = await getCandidates(title, author);
+    const url = candidates[0]?.url || null;
     cache[key] = url || '';
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
     return url;
   }
+
   function saveApproved(key, url) {
     if (!url) return;
     approved[key] = url;
     try { localStorage.setItem(APPROVED_KEY, JSON.stringify(approved)); } catch {}
   }
+
   function getCards() { return [...document.querySelectorAll('.book')]; }
+
   function addApprovalButton(cover, key, url) {
     if (!url || cover.querySelector('.cover-approve')) return;
     const b = document.createElement('button');
@@ -41,7 +103,7 @@
     b.textContent = Object.prototype.hasOwnProperty.call(approved, key) ? '✓ Saved' : '✓ Keep Cover';
     b.title = 'Keep this cover on your bookshelf';
     b.style.cssText = 'position:absolute;left:8px;bottom:8px;z-index:4;padding:5px 8px;font-size:10px;background:rgba(255,250,252,.94);backdrop-filter:blur(4px);';
-    b.onclick = (e) => {
+    b.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
       saveApproved(key, url);
@@ -50,6 +112,7 @@
     };
     cover.appendChild(b);
   }
+
   async function applyCovers() {
     if (running) return;
     const cards = getCards().filter(card => !card.dataset.coverLoaderDone);
@@ -103,6 +166,7 @@
       }
     }
   }
+
   function addButton() {
     if (document.getElementById('findCoversBtn')) return;
     const actions = document.querySelector('header .actions');
@@ -115,20 +179,138 @@
     b.onclick = () => { getCards().forEach(c => { if (!c.querySelector('.cover img')) delete c.dataset.coverLoaderDone; }); applyCovers(); };
     actions.insertBefore(b, actions.firstChild);
   }
+
+  /* Per-book cover search inside Edit Book. */
+  let editorCandidates = [];
+  function installEditorCoverTools() {
+    const form = document.getElementById('bookForm');
+    if (!form || form.dataset.coverToolsInstalled === '1') return;
+    const coverInput = form.querySelector('[name="cover"]');
+    if (!coverInput) return;
+    form.dataset.coverToolsInstalled = '1';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'editor-cover-tools wide';
+    wrap.innerHTML = `
+      <div class="editor-cover-head">
+        <div><b>🖼️ Cover Finder</b><span>Search for this book only — you choose which cover to use.</span></div>
+        <button type="button" class="btn" id="editorFindCoverBtn">🖼️ Find Cover</button>
+      </div>
+      <div id="editorCoverStatus" class="editor-cover-status"></div>
+      <div id="editorCoverChoices" class="editor-cover-choices"></div>`;
+    coverInput.insertAdjacentElement('afterend', wrap);
+
+    const status = wrap.querySelector('#editorCoverStatus');
+    const choices = wrap.querySelector('#editorCoverChoices');
+    const findBtn = wrap.querySelector('#editorFindCoverBtn');
+
+    const showCurrent = () => {
+      choices.innerHTML = '';
+      if (coverInput.value) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'cover-choice selected';
+        item.innerHTML = `<img src="${escHtml(coverInput.value)}" alt="Current cover"><span>Current cover</span>`;
+        item.onclick = () => { coverInput.focus(); };
+        choices.appendChild(item);
+      }
+    };
+    showCurrent();
+
+    findBtn.onclick = async () => {
+      const title = form.querySelector('[name="title"]')?.value?.trim() || '';
+      const author = form.querySelector('[name="author"]')?.value?.trim() || '';
+      if (!title) { status.textContent = 'Add a book title first. 💕'; return; }
+      findBtn.disabled = true;
+      findBtn.textContent = '🔎 Searching…';
+      status.textContent = `Looking for “${title}”${author ? ` by ${author}` : ''}…`;
+      choices.innerHTML = '';
+      try {
+        editorCandidates = await getCandidates(title, author);
+        if (!editorCandidates.length) {
+          status.textContent = 'No good matches found. Try adjusting the title or author, then search again.';
+          return;
+        }
+        status.textContent = `${editorCandidates.length} cover options found — click the one you want. 💕`;
+        editorCandidates.forEach((candidate, index) => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'cover-choice';
+          item.innerHTML = `<img src="${escHtml(candidate.url)}" alt="${escHtml(candidate.title)}"><span>${escHtml(candidate.title || 'Cover '+(index+1))}</span><small>${escHtml(candidate.author || candidate.source)}</small>`;
+          item.onclick = () => {
+            coverInput.value = candidate.url;
+            coverInput.dispatchEvent(new Event('input', {bubbles:true}));
+            coverInput.dispatchEvent(new Event('change', {bubbles:true}));
+            choices.querySelectorAll('.cover-choice').forEach(x => x.classList.remove('selected'));
+            item.classList.add('selected');
+            status.textContent = '✓ Cover selected. Save the book to keep it. 💕';
+          };
+          choices.appendChild(item);
+        });
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'I could not search for covers right now. You can still paste a cover URL manually.';
+      } finally {
+        findBtn.disabled = false;
+        findBtn.textContent = '🖼️ Find Cover';
+      }
+    };
+  }
+
+  function addEditorStyles() {
+    if (document.getElementById('editorCoverFinderStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'editorCoverFinderStyles';
+    style.textContent = `
+      #bookForm .editor-cover-tools{grid-column:1/-1;border:1px solid var(--line);border-radius:16px;background:#fffafb;padding:12px;margin-top:-2px}
+      #bookForm .editor-cover-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+      #bookForm .editor-cover-head>div{display:flex;flex-direction:column;gap:3px}
+      #bookForm .editor-cover-head b{color:#684352;font-size:13px}
+      #bookForm .editor-cover-head span,#bookForm .editor-cover-status{font-size:11px;color:var(--muted)}
+      #bookForm .editor-cover-status{margin-top:8px;min-height:16px}
+      #bookForm .editor-cover-choices{display:flex;gap:9px;overflow-x:auto;padding:8px 2px 3px}
+      #bookForm .cover-choice{flex:0 0 82px;width:82px;border:1px solid var(--line);border-radius:11px;background:#fff8fb;padding:5px;color:var(--ink);cursor:pointer;text-align:left}
+      #bookForm .cover-choice:hover{border-color:var(--accent);transform:translateY(-1px)}
+      #bookForm .cover-choice.selected{border:2px solid var(--accent);background:#fde7ef}
+      #bookForm .cover-choice img{display:block;width:70px;height:96px;object-fit:contain;background:#fcecf3;border-radius:7px;margin:0 auto 5px}
+      #bookForm .cover-choice span,#bookForm .cover-choice small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+      #bookForm .cover-choice small{color:var(--muted);margin-top:2px}
+      @media(max-width:600px){#bookForm .editor-cover-tools{grid-column:1}.editor-cover-head{align-items:stretch!important}.editor-cover-head .btn{width:100%}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function installEditorRouting() {
+    try {
+      window.editBook = function(id) {
+        const book = state.books.find(b => b.id === id);
+        if (book && typeof window.addBook === 'function') window.addBook(book);
+      };
+      const addBtn = document.getElementById('addBookBtn');
+      if (addBtn && typeof window.addBook === 'function') addBtn.onclick = () => window.addBook();
+    } catch (e) { console.warn('Detailed editor routing could not be installed yet', e); }
+  }
+
   function start() {
+    addEditorStyles();
     addButton();
+    installEditorCoverTools();
+    installEditorRouting();
     applyCovers();
     if (!observer) {
-      observer = new MutationObserver(() => { addButton(); applyCovers(); });
-      const target = document.getElementById('bookshelfPanel') || document.body;
+      observer = new MutationObserver(() => {
+        addButton();
+        addEditorStyles();
+        installEditorCoverTools();
+        installEditorRouting();
+        applyCovers();
+      });
+      const target = document.body;
       observer.observe(target, {childList:true, subtree:true});
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
-
-/* Route Edit and + Add Book to the restored detailed editor. */
-(() => { const installEditorRouting = () => { try { window.editBook = function(id) { const book = state.books.find(b => b.id === id); if (book && typeof window.addBook === 'function') window.addBook(book); }; const addBtn = document.getElementById('addBookBtn'); if (addBtn && typeof window.addBook === 'function') addBtn.onclick = () => window.addBook(); } catch (e) { console.warn('Detailed editor routing could not be installed yet', e); } }; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installEditorRouting); else installEditorRouting(); setTimeout(installEditorRouting, 0); })();
 
 /* EDIT-BOOK-BOTTOM-UI: fix the notes/review area and bottom action bar. */
 (() => {
