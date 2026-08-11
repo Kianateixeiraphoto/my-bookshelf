@@ -169,3 +169,43 @@
   else installEditorRouting();
   setTimeout(installEditorRouting, 0);
 })();
+
+/* EDIT-BOOK-BOTTOM-UI: keep the notes/review area clean and easy to use. */
+(() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    #bookForm > label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      line-height: 1.2;
+    }
+    #bookForm > label.wide {
+      grid-column: 1 / -1;
+    }
+    #bookForm > label.wide textarea {
+      width: 100%;
+      min-height: 170px;
+      display: block;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    #bookForm > .wide.actions {
+      margin-top: 2px;
+      padding: 12px 0 2px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(to bottom, rgba(255,250,250,.96), rgba(255,250,250,1));
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
+    #bookForm > .wide.actions .btn {
+      min-width: 110px;
+    }
+    @media (max-width: 600px) {
+      #bookForm { grid-template-columns: 1fr !important; }
+      #bookForm > label.wide { grid-column: auto; }
+    }
+  `;
+  document.head.appendChild(style);
+})();
