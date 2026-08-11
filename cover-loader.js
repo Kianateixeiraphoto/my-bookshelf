@@ -16,9 +16,72 @@
   async function openLibraryCover(title, author) { const params = new URLSearchParams({title, limit:'8'}); if (author) params.set('author', author); const r = await fetch(`https://openlibrary.org/search.json?${params}`); if (!r.ok) throw new Error('Open Library request failed'); const data = await r.json(); const docs = data.docs || []; let best = null, bestScore = 0; for (const doc of docs) { const score = titleScore(title, doc.title) + authorScore(author, doc.author_name || []); if (doc.cover_i && score > bestScore) { best = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`; bestScore = score; } } return bestScore >= (author ? 55 : 50) ? best : null; }
   async function findCover(title, author) { const key = keyFor(title, author); if (Object.prototype.hasOwnProperty.call(cache, key)) return cache[key]; let url = null; try { url = await googleCover(title, author); } catch {} if (!url) { try { url = await openLibraryCover(title, author); } catch {} } cache[key] = url || ''; try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {} return url; }
   function getCards() { return [...document.querySelectorAll('.book')]; }
-  async function applyCovers() { if (running) return; const cards = getCards().filter(card => !card.dataset.coverLoaderDone); if (!cards.length) return; running = true; const button = document.getElementById('findCoversBtn'); if (button) { button.disabled = true; button.textContent = '🖼️ Finding covers…'; } let found = 0; try { for (const card of cards) { card.dataset.coverLoaderDone = 'working'; const titleEl = card.querySelector('.book-title'); const authorEl = card.querySelector('.author'); const cover = card.querySelector('.cover'); const title = titleEl?.textContent?.trim() || ''; const author = authorEl?.textContent?.trim() || ''; if (!title || !cover) { card.dataset.coverLoaderDone = 'done'; continue; } if (cover.querySelector('img')) { card.dataset.coverLoaderDone = 'done'; continue; } const url = await findCover(title, author); if (url) { const img = document.createElement('img'); img.alt = `${title} cover`; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.src = url; img.onerror = () => { img.remove(); }; cover.prepend(img); found++; } card.dataset.coverLoaderDone = 'done'; await sleep(250); } } finally { running = false; if (button) { button.disabled = false; button.textContent = found ? `🖼️ Covers found (${found})` : '🖼️ Find Covers'; setTimeout(() => { if (button) button.textContent = '🖼️ Find Covers'; }, 3500); } } }
-  function addButton() { if (document.getElementById('findCoversBtn')) return; const actions = document.querySelector('header .actions'); if (!actions) return; const b = document.createElement('button'); b.className = 'btn'; b.id = 'findCoversBtn'; b.textContent = '🖼️ Find Covers'; b.title = 'Find cover art for books on your bookshelf'; b.onclick = () => { getCards().forEach(c => { if (!c.querySelector('.cover img')) delete c.dataset.coverLoaderDone; }); applyCovers(); }; actions.insertBefore(b, actions.firstChild); }
-  function start() { addButton(); applyCovers(); if (!observer) { observer = new MutationObserver(() => { addButton(); applyCovers(); }); const target = document.getElementById('bookshelfPanel') || document.body; observer.observe(target, {childList:true, subtree:true}); } }
+  async function applyCovers() {
+    if (running) return;
+    const cards = getCards().filter(card => !card.dataset.coverLoaderDone);
+    if (!cards.length) return;
+    running = true;
+    const button = document.getElementById('findCoversBtn');
+    if (button) { button.disabled = true; button.textContent = '🖼️ Finding covers…'; }
+    let found = 0;
+    try {
+      for (const card of cards) {
+        card.dataset.coverLoaderDone = 'working';
+        const titleEl = card.querySelector('.book-title');
+        const authorEl = card.querySelector('.author');
+        const cover = card.querySelector('.cover');
+        const title = titleEl?.textContent?.trim() || '';
+        const author = authorEl?.textContent?.trim() || '';
+        if (!title || !cover) { card.dataset.coverLoaderDone = 'done'; continue; }
+        if (cover.querySelector('img')) { card.dataset.coverLoaderDone = 'done'; continue; }
+        const url = await findCover(title, author);
+        if (url) {
+          const img = document.createElement('img');
+          img.alt = `${title} cover`;
+          img.loading = 'lazy';
+          img.referrerPolicy = 'no-referrer';
+          img.onload = () => {
+            cover.querySelector('.cover-placeholder')?.remove();
+            cover.classList.add('has-cover');
+          };
+          img.onerror = () => { img.remove(); };
+          img.src = url;
+          cover.prepend(img);
+          found++;
+        }
+        card.dataset.coverLoaderDone = 'done';
+        await sleep(250);
+      }
+    } finally {
+      running = false;
+      if (button) {
+        button.disabled = false;
+        button.textContent = found ? `🖼️ Covers found (${found})` : '🖼️ Find Covers';
+        setTimeout(() => { if (button) button.textContent = '🖼️ Find Covers'; }, 3500);
+      }
+    }
+  }
+  function addButton() {
+    if (document.getElementById('findCoversBtn')) return;
+    const actions = document.querySelector('header .actions');
+    if (!actions) return;
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.id = 'findCoversBtn';
+    b.textContent = '🖼️ Find Covers';
+    b.title = 'Find cover art for books on your bookshelf';
+    b.onclick = () => { getCards().forEach(c => { if (!c.querySelector('.cover img')) delete c.dataset.coverLoaderDone; }); applyCovers(); };
+    actions.insertBefore(b, actions.firstChild);
+  }
+  function start() {
+    addButton();
+    applyCovers();
+    if (!observer) {
+      observer = new MutationObserver(() => { addButton(); applyCovers(); });
+      const target = document.getElementById('bookshelfPanel') || document.body;
+      observer.observe(target, {childList:true, subtree:true});
+    }
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 
