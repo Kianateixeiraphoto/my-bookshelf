@@ -49,43 +49,76 @@
         .author, .meta { overflow-wrap: anywhere; }
         .book-actions .btn { min-height: 36px; }
 
-        /* All long forms scroll at the overlay level on iPhone. This avoids
-           nested-scroll traps where the AO3 Save/Confirm button becomes unreachable. */
-        .modal {
-          align-items: flex-start;
-          padding: 8px;
-          overflow-y: auto;
-          overflow-x: hidden;
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior: contain;
-          touch-action: pan-y;
+        /* iPhone repair: the AO3 importer is a long fixed modal. The overlay itself
+           must be the ONLY scroll container. A fixed-height card or nested overflow
+           trap makes the lower Save/Confirm button unreachable after OCR fills the form. */
+        html.ao3-modal-open, body.ao3-modal-open { overflow: hidden !important; height: 100%; }
+        .modal.show {
+          display: block !important;
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100dvh !important;
+          max-height: 100dvh !important;
+          padding: 8px !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          -webkit-overflow-scrolling: touch !important;
+          overscroll-behavior-y: contain !important;
+          touch-action: pan-y !important;
         }
-        .modal-card {
-          width: min(100%, 620px);
-          max-width: 100%;
-          max-height: none;
-          overflow: visible;
-          flex: 0 0 auto;
-          margin: 0 auto 18px;
-          padding: 16px 14px 22px;
-          border-radius: 20px;
+        .modal.show > .modal-card {
+          display: block !important;
+          width: min(100%, 620px) !important;
+          max-width: 100% !important;
+          height: auto !important;
+          min-height: calc(100dvh - 16px) !important;
+          max-height: none !important;
+          margin: 0 auto 18px !important;
+          padding: 16px 14px 34px !important;
+          overflow: visible !important;
+          position: relative !important;
+          flex: none !important;
         }
-        .modal-card .row { position: sticky; top: -16px; z-index: 8; background: #fffafa; padding: 2px 0 10px; }
-        .modal-card h2 { font-size: 22px; margin: 0; }
+        .modal.show > .modal-card > form {
+          display: block !important;
+          height: auto !important;
+          max-height: none !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+        }
+        .modal.show .modal-card .row {
+          position: sticky !important;
+          top: -16px !important;
+          z-index: 20 !important;
+          background: #fffafa !important;
+          padding: 2px 0 10px !important;
+        }
+        .modal.show .modal-card h2 { font-size: 22px; margin: 0; }
         .form-grid { grid-template-columns: 1fr !important; gap: 9px; }
         .wide { grid-column: auto !important; }
         .modal-card input, .modal-card select, .modal-card textarea { width: 100%; max-width: 100%; font-size: 16px; }
         .modal-card textarea { min-height: 150px; resize: vertical; }
         .modal-card label { font-size: 12px; }
 
-        /* AO3 metadata forms specifically: keep the final action row reachable and
-           give it breathing room above the iPhone home indicator. */
-        #ao3Form { padding-bottom: 18px; }
-        #ao3Form .actions:last-child,
-        #ao3Form button[type="submit"],
-        #ao3Form .ao3-save,
-        #ao3Form .ao3-confirm { min-height: 46px; }
-        #ao3Form .actions:last-child { margin-top: 14px; padding-bottom: 10px; }
+        /* AO3 screenshot form: make the bottom action row impossible to lose. */
+        #ao3Form, #ficForm { padding-bottom: 30px !important; margin-bottom: 0 !important; }
+        #ao3Form .actions:last-child, #ficForm .actions:last-child {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 8px !important;
+          margin-top: 18px !important;
+          padding: 12px 0 28px !important;
+          background: #fffafa !important;
+        }
+        #ao3Form button[type="submit"], #ficForm button[type="submit"],
+        #ao3Form .ao3-save, #ao3Form .ao3-confirm,
+        #ficForm .ao3-save, #ficForm .ao3-confirm {
+          min-height: 48px !important;
+          position: sticky !important;
+          bottom: 8px !important;
+          z-index: 25 !important;
+        }
 
         .tag-picker { padding: 9px; }
         .tag-picker-head { gap: 8px; }
@@ -136,17 +169,33 @@
     `;
     document.head.appendChild(style);
 
+    function syncModalScrollState() {
+      const modal = document.getElementById('modal');
+      const open = !!modal?.classList.contains('show');
+      const ao3 = !!modal?.querySelector('#ficForm, #ao3Form, #ao3ScreenshotFile');
+      document.documentElement.classList.toggle('ao3-modal-open', open && ao3);
+      document.body.classList.toggle('ao3-modal-open', open && ao3);
+      if (open && ao3) {
+        modal.style.overflowY = 'auto';
+        modal.style.height = '100dvh';
+        modal.style.maxHeight = '100dvh';
+        modal.style.display = 'block';
+      }
+    }
+
     const observer = new MutationObserver(() => {
+      syncModalScrollState();
       const modal = document.getElementById('modal');
       if (modal?.classList.contains('show')) {
         const card = modal.querySelector('.modal-card');
         if (card && !card.dataset.mobileReset) {
           card.dataset.mobileReset = '1';
-          requestAnimationFrame(() => { card.scrollTop = 0; modal.scrollTop = 0; });
+          requestAnimationFrame(() => { modal.scrollTop = 0; card.scrollTop = 0; });
         }
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+    syncModalScrollState();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
