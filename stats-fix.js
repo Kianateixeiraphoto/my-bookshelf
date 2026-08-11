@@ -16,10 +16,6 @@
     'Genre / Setting': ['Contemporary','Historical','Fantasy','Paranormal','Sci-Fi','RomCom','Mystery','Thriller','Horror','Mafia','Billionaire','Military','Law Enforcement','Cowboys','Academia','High School','College','Workplace','Small Town','Road Trip']
   };
 
-  const sectionSets = Object.fromEntries(
-    Object.entries(TAG_SECTIONS).map(([name, options]) => [name, new Set(options.map(cleanKey))])
-  );
-
   function countsForSection(books, options) {
     const allowed = new Set(options.map(cleanKey));
     const counts = {};
@@ -46,8 +42,7 @@
     const counts = Object.fromEntries(order.map(x => [x, 0]));
     books.forEach(book => {
       let spice = String(book.spice || '').trim();
-      if (!spice || spice === 'Not rated') spice = 'Not rated';
-      if (!counts[spice]) spice = 'Not rated';
+      if (!spice || spice === 'Not rated' || !(spice in counts)) spice = 'Not rated';
       counts[spice] += 1;
     });
     return Object.fromEntries(order.map(key => [key, counts[key]]).filter(([, count]) => count > 0));
