@@ -8,13 +8,11 @@
     const style = document.createElement('style');
     style.id = 'mobileUiFixes';
     style.textContent = `
-      /* Keep the app inside the phone viewport. */
       html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
       body { -webkit-text-size-adjust: 100%; }
       .app { width: 100%; max-width: 1250px; }
       img { max-width: 100%; }
 
-      /* Phone-friendly top controls and tabs. */
       @media (max-width: 700px) {
         .app { padding: 14px 10px 36px; }
         header { gap: 12px; margin-bottom: 16px; }
@@ -43,7 +41,6 @@
         .toolbar .search { grid-column: 1 / -1; min-width: 0; width: 100%; }
         .toolbar select { width: 100%; min-width: 0; }
 
-        /* Keep bookshelf cards compact without making covers microscopic. */
         .shelf { grid-template-columns: 1fr !important; gap: 10px; }
         .book { grid-template-columns: 88px minmax(0, 1fr); min-width: 0; }
         .cover { height: 138px; min-height: 138px; }
@@ -52,17 +49,25 @@
         .author, .meta { overflow-wrap: anywhere; }
         .book-actions .btn { min-height: 36px; }
 
-        /* The edit/add modal is the big mobile pain point: make it a true
-           full-height sheet with its own scroll, while keeping the buttons visible. */
-        .modal { align-items: flex-start; padding: 8px; overflow: hidden; }
+        /* All long forms scroll at the overlay level on iPhone. This avoids
+           nested-scroll traps where the AO3 Save/Confirm button becomes unreachable. */
+        .modal {
+          align-items: flex-start;
+          padding: 8px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+          touch-action: pan-y;
+        }
         .modal-card {
           width: min(100%, 620px);
           max-width: 100%;
-          max-height: calc(100dvh - 16px);
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior: contain;
-          padding: 16px 14px 18px;
+          max-height: none;
+          overflow: visible;
+          flex: 0 0 auto;
+          margin: 0 auto 18px;
+          padding: 16px 14px 22px;
           border-radius: 20px;
         }
         .modal-card .row { position: sticky; top: -16px; z-index: 8; background: #fffafa; padding: 2px 0 10px; }
@@ -73,7 +78,15 @@
         .modal-card textarea { min-height: 150px; resize: vertical; }
         .modal-card label { font-size: 12px; }
 
-        /* Multi-section tag picker: one section at a time vertically, no tiny columns. */
+        /* AO3 metadata forms specifically: keep the final action row reachable and
+           give it breathing room above the iPhone home indicator. */
+        #ao3Form { padding-bottom: 18px; }
+        #ao3Form .actions:last-child,
+        #ao3Form button[type="submit"],
+        #ao3Form .ao3-save,
+        #ao3Form .ao3-confirm { min-height: 46px; }
+        #ao3Form .actions:last-child { margin-top: 14px; padding-bottom: 10px; }
+
         .tag-picker { padding: 9px; }
         .tag-picker-head { gap: 8px; }
         .tag-sections { grid-template-columns: 1fr !important; max-height: none; overflow: visible; padding: 0; }
@@ -82,7 +95,6 @@
         .tag-option { min-height: 36px; padding: 7px 9px; font-size: 12px; }
         .tag-option input { width: 17px; height: 17px; }
 
-        /* Cover finder is easier to browse as a horizontal strip. */
         #bookForm .editor-cover-tools { padding: 10px; }
         #bookForm .editor-cover-head { align-items: stretch !important; }
         #bookForm .editor-cover-head .btn { width: 100%; min-height: 42px; }
@@ -90,10 +102,8 @@
         #bookForm .cover-choice { flex-basis: 86px; width: 86px; }
         #bookForm .cover-choice img { width: 74px; height: 102px; }
 
-        /* Notes/review gets the full width on phones. */
         #bookForm textarea[name="notes"], #bookForm textarea[name="review"] { min-height: 170px; width: 100%; }
 
-        /* Stats and fanfiction insight cards stack cleanly. */
         .panel { border-radius: 18px; padding: 13px; }
         .ff-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
         .ff-stat-card { min-width: 0; padding: 11px; }
@@ -105,12 +115,10 @@
         .ff-refresh { align-items: stretch; }
         .ff-refresh .btn { width: 100%; min-height: 42px; }
 
-        /* Generic grids used by the fanfiction/books-to-buy views. */
         .reading-grid, .buy-grid { grid-template-columns: 1fr !important; }
         .reading-card, .buy-card { min-width: 0; }
         .buy-card a { overflow-wrap: anywhere; }
 
-        /* Make all important touch targets comfortable on iPhone/Android. */
         button, .btn, select { touch-action: manipulation; }
       }
 
@@ -128,15 +136,13 @@
     `;
     document.head.appendChild(style);
 
-    // When a modal opens, start it at the top so the title/first fields aren't
-    // hidden behind the browser's viewport or the sticky header.
     const observer = new MutationObserver(() => {
       const modal = document.getElementById('modal');
       if (modal?.classList.contains('show')) {
         const card = modal.querySelector('.modal-card');
         if (card && !card.dataset.mobileReset) {
           card.dataset.mobileReset = '1';
-          requestAnimationFrame(() => { card.scrollTop = 0; });
+          requestAnimationFrame(() => { card.scrollTop = 0; modal.scrollTop = 0; });
         }
       }
     });
