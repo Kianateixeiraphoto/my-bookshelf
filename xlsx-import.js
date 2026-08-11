@@ -29,7 +29,7 @@
     if(/currently|in progress|reading now/.test(s))return 'Currently Reading';
     if(/dnf|did not finish|abandon/.test(s))return 'DNF';
     if(/want|tbr|wishlist|to read/.test(s))return 'Want to Read';
-    if(/read|finished/.test(s))return 'Read';
+    if(/^(read|finished|complete|completed|archived)$/.test(s))return 'Read';
     return clean(v)||'Read';
   }
   function convertRows(rows){
@@ -43,6 +43,8 @@
       if(!title || (!author && !pages && !rawStatus)) continue;
       const genre=clean(pick(row,headers,['GENRE','GENRES','TAGS','TROPES','GENRE TAGS']));
       const series=clean(pick(row,headers,['SERIES TITLE & NUMBER','SERIES TITLE','SERIES']));
+      const dateStarted=clean(pick(row,headers,['START DATE','DATE STARTED']));
+      const dateFinished=clean(pick(row,headers,['FINISH DATE','DATE FINISHED']));
       // Series is book metadata, not a tag/trope. Do not put it into tags.
       const t=tags(genre);
       imported.push({
@@ -51,8 +53,9 @@
         notes:clean(pick(row,headers,['NOTES','REVIEW','COMMENTS'])),
         cover:clean(pick(row,headers,['COVER','COVER URL','COVER IMAGE','IMAGE URL'])),
         favorite:/^(yes|true|1|y)$/i.test(clean(pick(row,headers,['FAVORITE','FAVORITES']))),
-        series,startDate:clean(pick(row,headers,['START DATE','DATE STARTED'])),
-        finishDate:clean(pick(row,headers,['FINISH DATE','DATE FINISHED'])),
+        series,dateStarted,dateFinished,
+        // Keep the older names too so previously imported data remains compatible.
+        startDate:dateStarted,finishDate:dateFinished,
         pubYear:clean(pick(row,headers,['PUB YEAR','PUBLICATION YEAR','YEAR'])),
         format:clean(pick(row,headers,['FORMAT','BOOK FORMAT'])),length:clean(pick(row,headers,['LENGTH','BOOK LENGTH'])),
         readership:clean(pick(row,headers,['READERSHIP CATEGORY','READERSHIP'])),
@@ -83,7 +86,14 @@
     const f=e.target.files[0];if(!f)return;
     try{
       const imported=await importFile(f), existing=Array.isArray(state.books)?state.books:[];
-      const badBulk=existing.length>500 && imported.length<500;
+      // Only use the old bulk-replacement safeguard when the existing collection
+      // actually looks like the accidental placeholder flood we were repairing.
+      const placeholderLike=b=>{
+        const title=norm(b.title),author=norm(b.author),pages=Number(b.pages||0),status=norm(b.status);
+        return !author && pages===0 && (!title || /^book( |-)\d+$/.test(title)) && (!status || status==='read');
+      };
+      const placeholderCount=existing.filter(placeholderLike).length;
+      const badBulk=existing.length>500 && placeholderCount >= Math.floor(existing.length*0.8) && imported.length<existing.length;
       let added=0,updated=0;
       if(badBulk){state.books=imported;added=imported.length;updated=0;}
       else{
