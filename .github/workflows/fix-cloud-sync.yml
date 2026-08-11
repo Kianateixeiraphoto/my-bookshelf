@@ -11,50 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch sync and spreadsheet import logic
+      - name: Add spreadsheet importer
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-
-          # Load SheetJS in the browser so the Import button can read .xlsx/.xls/.csv files.
           marker = '<script>\nconst SUPABASE_URL='
           library = '<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>\n'
           if library not in s:
-              if marker not in s:
-                  raise SystemExit('Could not find the app script marker.')
               s = s.replace(marker, library + marker, 1)
-
-          s = re.sub(
-              r'<input id="fileInput" type="file" accept="[^"]*" style="display:none">',
-              '<input id="fileInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json,.json" style="display:none">',
-              s,
-              count=1,
-          )
-
-          new_import_handler = r'''$('importBtn').onclick=()=>$('fileInput').click();
-$('fileInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const ext=f.name.toLowerCase().split('.').pop();if(ext==='json'){const text=await f.text();state={...state,...JSON.parse(text)};}else{if(typeof XLSX==='undefined')throw Error('Spreadsheet support is still loading. Please try again in a moment.');const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});if(!rows.length)throw Error('The spreadsheet appears to be empty.');const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');const pick=(r,names)=>{for(const n of names){const k=Object.keys(r).find(x=>norm(x)===norm(n));if(k&&r[k]!==''&&r[k]!=null)return r[k];}return '';};const asNumber=v=>{const n=Number(String(v??'').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};const asTags=v=>String(v??'').split(/[,;|]/).map(x=>x.trim()).filter(Boolean);const imported=rows.map((r,i)=>{const title=pick(r,['Title','Book Title','Name']);const author=pick(r,['Author','Book Author','Writer']);const statusRaw=pick(r,['Status','Reading Status','Book Status']);const statusText=String(statusRaw||'').trim().toLowerCase();let status='Read';if(/currently|reading|in progress|reading now/.test(statusText))status='Currently Reading';else if(/dnf|did not finish|abandon/.test(statusText))status='DNF';else if(/want|tbr|wishlist|to read/.test(statusText))status='Want to Read';return{id:crypto.randomUUID(),title:String(title||('Imported Book '+(i+1))),author:String(author||''),status,rating:asNumber(pick(r,['Rating','Star Rating','Stars','My Rating'])),pages:asNumber(pick(r,['Pages','Page Count','Number of Pages'])),tags:asTags(pick(r,['Tags','Tropes','Genre','Genres','Genre Tags'])),notes:String(pick(r,['Notes','Review','Comments'])),cover:String(pick(r,['Cover','Cover URL','Cover Image','Image URL'])),favorite:/^(yes|true|1|y)$/i.test(String(pick(r,['Favorite','Favorites'])))});}).filter(b=>b.title);const existing=new Map((state.books||[]).map(b=>[norm(b.title)+'|'+norm(b.author),b]));let added=0,updated=0;for(const b of imported){const key=norm(b.title)+'|'+norm(b.author);if(existing.has(key)){const old=existing.get(key);Object.assign(old,{...b,id:old.id});updated++;}else{(state.books||[]).push(b);added++;}}}saveLocal();render();await sync();alert('Spreadsheet imported! Added '+added+' books and updated '+updated+'.');}catch(err){console.error(err);alert('I could not import that file. '+(err.message||err));}finally{e.target.value='';}};'''
-          pattern = r"\$\('importBtn'\)\.onclick=.*?function openAuth"
-          s, n = re.subn(pattern, new_import_handler + '\nfunction openAuth', s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit('Could not find the current import handler.')
-
-          cloud_load = r'''async function cloudLoad(){if(!session)return;try{const uid=session.user.id;const newId='library:'+uid;let rows=await api('/rest/v1/books?select=data,updated_at&user_id=eq.'+encodeURIComponent(uid)+'&id=eq.'+encodeURIComponent(newId));if(!rows?.length)rows=await api('/rest/v1/books?select=data,updated_at&user_id=eq.'+encodeURIComponent(uid)+'&id=eq.library');if(rows?.[0]?.data){state={...state,...rows[0].data};saveLocal();render();$('cloudStatus').textContent='Synced from cloud 💕'}else{$('cloudStatus').textContent='Cloud account ready · no saved bookshelf yet'}}catch(e){console.warn(e);$('cloudStatus').textContent='Cloud sync unavailable'}}'''
-          sync = r'''async function sync(){if(!session){openAuth('login');return}try{const uid=session.user.id,newId='library:'+uid,now=new Date().toISOString();let rows=await api('/rest/v1/books?select=id&user_id=eq.'+encodeURIComponent(uid)+'&id=eq.'+encodeURIComponent(newId));if(rows?.length){await api('/rest/v1/books?id=eq.'+encodeURIComponent(newId)+'&user_id=eq.'+encodeURIComponent(uid),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({data:state,updated_at:now})})}else{rows=await api('/rest/v1/books?select=id&user_id=eq.'+encodeURIComponent(uid)+'&id=eq.library');if(rows?.length){await api('/rest/v1/books?id=eq.library&user_id=eq.'+encodeURIComponent(uid),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({data:state,updated_at:now})})}else{await api('/rest/v1/books',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:newId,user_id:uid,data:state,updated_at:now})})}}$('cloudStatus').textContent='Synced just now 💕'}catch(e){console.error(e);$('cloudStatus').textContent='Sync failed';alert('Cloud sync failed: '+(e.message||e))}}'''
-          restore = r'''async function restoreSession(){try{let s=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(!s?.access_token)return;try{const u=await api('/auth/v1/user');setSession({...s,user:u})}catch(e){if(!s.refresh_token)throw e;const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});const d=await r.json();if(!r.ok||!d.access_token)throw Error(d.error_description||d.msg||'Session expired');setSession({access_token:d.access_token,refresh_token:d.refresh_token||s.refresh_token,user:d.user})}}catch(e){console.warn('Session restore failed',e);setSession(null)}}'''
-
-          patterns = [
-            (r'async function cloudLoad\(\)\{.*?\}\nasync function sync', cloud_load + '\nasync function sync'),
-            (r'async function sync\(\)\{.*?\}\nfunction render', sync + '\nfunction render'),
-            (r'async function restoreSession\(\)\{.*?\}\nasync function cloudLoad', restore + '\nasync function cloudLoad')
-          ]
-          for pattern, replacement in patterns:
-              ns, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
-              if n != 1:
-                  raise SystemExit(f'Could not patch expected code block: {pattern[:45]}')
-              s = ns
+          s = re.sub(r'<input id="fileInput" type="file" accept="[^"]*" style="display:none">', '<input id="fileInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json,.json" style="display:none">', s, count=1)
+          if 'src="xlsx-import.js"' not in s:
+              s = s.replace('</body>', '<script src="xlsx-import.js"></script></body>', 1)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Commit patch
@@ -63,5 +33,5 @@ $('fileInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{con
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Add Excel spreadsheet import support'
+          git commit -m 'Enable XLSX spreadsheet imports'
           git push
