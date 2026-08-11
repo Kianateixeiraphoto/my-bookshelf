@@ -21,6 +21,7 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
@@ -28,8 +29,6 @@ jobs:
           if 'TAG-SECTIONS-V2' in text:
               print('Grouped tag picker already present; nothing to do.')
               raise SystemExit(0)
-
-          old = '''<label class="wide">Tags / tropes\n                  <select name="tags" id="bookTags" multiple size="7" style="width:100%;margin-top:6px">${selectedTags}</select>\n                  <div class="status" style="margin-top:5px">Hold Ctrl/Cmd to select multiple. Selected tags will be saved with the book.</div>\n                </label>'''
 
           new = r'''<div class="wide tag-picker" id="bookTags" data-tag-sections-v2="true">
                     <div class="tag-picker-head">
@@ -49,15 +48,16 @@ jobs:
                     </div>
                   </div>'''
 
-          if old not in text:
+          pattern = r'<label class="wide">Tags / tropes.*?</label>'
+          text, count = re.subn(pattern, new, text, count=1, flags=re.S)
+          if count != 1:
               raise SystemExit('Could not find the existing tag picker block.')
 
-          text = text.replace(old, new, 1)
-          old_selected = "const selected = Array.from($('bookTags').selectedOptions).map(o => o.value);"
+          selected_pattern = r"const selected = Array\.from\(\$\('bookTags'\)\.selectedOptions\)\.map\(o => o\.value\);"
           new_selected = "const selected = Array.from(document.querySelectorAll('#bookTags input[type=\\\"checkbox\\\"]:checked')).map(o => o.value);"
-          if old_selected not in text:
+          text, count = re.subn(selected_pattern, new_selected, text, count=1)
+          if count != 1:
               raise SystemExit('Could not find the existing tag selection handler.')
-          text = text.replace(old_selected, new_selected, 1)
 
           text = text.replace('</style></head>', r'''<style>
           /* TAG-SECTIONS-V2 */
