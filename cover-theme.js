@@ -9,7 +9,8 @@
   function themeCard(card){if(!card||card.dataset.coverThemePending==='1')return;const img=card.querySelector('.cover img');if(!img)return;card.dataset.coverThemePending='1';const finish=()=>{const sampler=new Image();sampler.crossOrigin='anonymous';sampler.onload=()=>sampleImage(sampler,rgb=>setTheme(card,rgb));sampler.onerror=()=>setTheme(card,FALLBACK);sampler.src=img.currentSrc||img.src;};if(img.complete&&img.naturalWidth)finish();else img.addEventListener('load',finish,{once:true});}
   function installStyles(){if(document.getElementById(STYLE_ID))return;const style=document.createElement('style');style.id=STYLE_ID;style.textContent=`
     .book[data-cover-theme-ready="1"]{background:linear-gradient(135deg,hsl(var(--cover-h),var(--cover-s),var(--cover-l)),hsl(var(--cover-h),calc(var(--cover-s)*.76),calc(var(--cover-l) + 7%)) 72%);border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));box-shadow:0 10px 30px hsla(var(--cover-h),58%,42%,.24)}
-    .book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.24),hsla(var(--cover-h),calc(var(--cover-s)*.82),calc(var(--cover-l) + 4%),.10) 70%,transparent)}
+    .book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.24),hsla(var(--cover-h),calc(var(--cover-s)*.82),calc(var(--cover-l) + 4%),.10) 70%,transparent);color:#000}
+    .book[data-cover-theme-ready="1"] .book-title,.book[data-cover-theme-ready="1"] .author,.book[data-cover-theme-ready="1"] .meta{color:#000}
     .book[data-cover-theme-ready="1"] .chips .chip{background:hsl(var(--cover-h),calc(var(--cover-s)*.92),calc(var(--cover-l) - 2%));color:#000;border-color:hsla(var(--cover-h),58%,42%,.25)}
     .book[data-cover-theme-ready="1"] .book-actions .btn:not(.primary){background:hsla(var(--cover-h),calc(var(--cover-s)*.72),96%,.92);border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));color:#000}
     .book[data-cover-theme-ready="1"] .cover{background:linear-gradient(145deg,hsl(var(--cover-h),calc(var(--cover-s)*.92),calc(var(--cover-l) - 1%)),hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) + 9%)))}
@@ -20,5 +21,9 @@
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
   function start(){apply();new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  if(!document.getElementById('buy-search-script')){const s=document.createElement('script');s.id='buy-search-script';s.src='buy-search.js';document.head.appendChild(s);}
+
+  // Load the Buy List lookup after the main app has defined addBuy().
+  // Cache-bust the helper so an older browser-cached copy cannot hide the lookup UI.
+  const loadBuySearch=()=>{if(document.getElementById('buy-search-script'))return;const s=document.createElement('script');s.id='buy-search-script';s.src='buy-search.js?v=20260811-2';s.onload=()=>window.dispatchEvent(new Event('buy-search-ready'));document.head.appendChild(s)};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadBuySearch,{once:true});else setTimeout(loadBuySearch,0);
 })();
