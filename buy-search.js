@@ -1,4 +1,4 @@
-/* My Bookshelf — Books to Buy title/author lookup */
+/* My Bookshelf — Books to Buy title/author lookup + entry editing */
 (() => {
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -23,6 +23,29 @@
     const all=[];try{all.push(...await google(title,author))}catch{}try{all.push(...await openLibrary(title,author))}catch{}
     const seen=new Set();return all.sort((a,b)=>b.score-a.score).filter(x=>{const k=x.cover;if(seen.has(k))return false;seen.add(k);return x.score>=(author?40:35)}).slice(0,8);
   }
+
+  function editBuy(index){
+    if(!window.state?.buy?.[index]) return;
+    const item=window.state.buy[index];
+    openModal(`<div class="row"><h2>✏️ Edit Buy List Entry</h2><button class="btn" type="button" id="editBuyCancel">Cancel</button></div><form id="editBuyForm" class="form-grid"><label>Book title<input name="title" value="${esc(item.title)}" required style="width:100%;margin-top:5px"></label><label>Author<input name="author" value="${esc(item.author)}" required style="width:100%;margin-top:5px"></label><label>Price<input name="price" type="number" min="0" step="0.01" value="${item.price!==''&&item.price!=null?esc(item.price):''}" placeholder="e.g. 14.99" style="width:100%;margin-top:5px"></label><label>Book cover<input name="cover" type="url" value="${esc(item.cover)}" placeholder="Cover image URL" style="width:100%;margin-top:5px"></label><div id="editBuyCoverPreview" class="wide" style="display:none"></div><input class="wide" name="link" value="${esc(item.link)}" placeholder="Book/store link (optional)"><textarea class="wide" name="summary" placeholder="Summary (optional)">${esc(item.summary)}</textarea><div class="actions wide" style="justify-content:flex-end"><button class="btn" type="button" id="editBuyCancel2">Cancel</button><button class="btn primary" type="submit">Save Changes</button></div></form>`);
+    const form=$('editBuyForm'),preview=$('editBuyCoverPreview');
+    const showCover=()=>{const url=form.elements.cover.value.trim();if(!url){preview.style.display='none';preview.innerHTML='';return}preview.style.display='block';preview.innerHTML=`<div class="buy-cover-preview"><img src="${esc(url)}" alt="Book cover preview"><span>Cover preview</span></div>`};
+    form.elements.cover.oninput=showCover;showCover();
+    const close=()=>closeModal();$('editBuyCancel').onclick=close;$('editBuyCancel2').onclick=close;
+    form.onsubmit=e=>{e.preventDefault();const x=Object.fromEntries(new FormData(form).entries());x.price=x.price?Number(x.price):'';window.state.buy[index]=x;saveLocal();closeModal();render();sync()};
+  }
+  window.editBuy=editBuy;
+
+  function installEditButtons(){
+    const panel=$('buyPanel');if(!panel)return;
+    panel.querySelectorAll('.buy-card').forEach((card,index)=>{
+      if(card.querySelector('.edit-buy-btn'))return;
+      const actions=document.createElement('div');actions.className='book-actions buy-entry-actions';actions.style.marginTop='10px';
+      const btn=document.createElement('button');btn.type='button';btn.className='btn edit-buy-btn';btn.textContent='✏️ Edit';btn.onclick=()=>editBuy(index);
+      actions.appendChild(btn);card.appendChild(actions);
+    });
+  }
+
   function install(){
     if(typeof window.addBuy!=='function' || window.addBuy.__lookupWrapped)return;
     const wrapped=function(){
@@ -44,6 +67,6 @@
     };
     wrapped.__lookupWrapped=true;window.addBuy=wrapped;
   }
-  function styles(){if($('buyLookupStyles'))return;const s=document.createElement('style');s.id='buyLookupStyles';s.textContent=`#buyResults{min-width:0}.buy-lookup-results{display:flex;gap:9px;overflow-x:auto;padding:8px 2px}.buy-lookup-card{flex:0 0 110px;width:110px;border:1px solid var(--line);border-radius:13px;background:#fff8fb;padding:7px;text-align:left;color:var(--ink);cursor:pointer}.buy-lookup-card:hover{border-color:var(--accent);transform:translateY(-1px)}.buy-lookup-card.selected{border:2px solid var(--accent);background:#fde7ef}.buy-lookup-card img{width:94px;height:128px;object-fit:contain;background:#fcecf3;border-radius:8px;display:block;margin-bottom:6px}.buy-lookup-card b,.buy-lookup-card small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.buy-lookup-card b{font-size:10px}.buy-lookup-card small{font-size:9px;color:var(--muted);margin-top:2px}.buy-cover-preview{display:flex;align-items:center;gap:10px;margin-top:2px;padding:8px;border:1px solid var(--line);border-radius:12px;background:#fff8fb}.buy-cover-preview img{width:52px;height:72px;object-fit:contain;border-radius:6px;background:#fcecf3}.buy-cover-preview span{font-size:11px;color:var(--muted)}@media(max-width:600px){#buyForm>div:first-child{grid-template-columns:1fr!important}.buy-lookup-card{flex-basis:96px;width:96px}.buy-lookup-card img{width:80px;height:112px}}`;document.head.appendChild(s)}
-  const start=()=>{styles();install()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,0));else setTimeout(start,0);new MutationObserver(()=>install()).observe(document.body,{childList:true,subtree:true});
+  function styles(){if($('buyLookupStyles'))return;const s=document.createElement('style');s.id='buyLookupStyles';s.textContent=`#buyResults{min-width:0}.buy-lookup-results{display:flex;gap:9px;overflow-x:auto;padding:8px 2px}.buy-lookup-card{flex:0 0 110px;width:110px;border:1px solid var(--line);border-radius:13px;background:#fff8fb;padding:7px;text-align:left;color:var(--ink);cursor:pointer}.buy-lookup-card:hover{border-color:var(--accent);transform:translateY(-1px)}.buy-lookup-card.selected{border:2px solid var(--accent);background:#fde7ef}.buy-lookup-card img{width:94px;height:128px;object-fit:contain;background:#fcecf3;border-radius:8px;display:block;margin-bottom:6px}.buy-lookup-card b,.buy-lookup-card small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.buy-lookup-card b{font-size:10px}.buy-lookup-card small{font-size:9px;color:var(--muted);margin-top:2px}.buy-cover-preview{display:flex;align-items:center;gap:10px;margin-top:2px;padding:8px;border:1px solid var(--line);border-radius:12px;background:#fff8fb}.buy-cover-preview img{width:52px;height:72px;object-fit:contain;border-radius:6px;background:#fcecf3}.buy-cover-preview span{font-size:11px;color:var(--muted)}.buy-entry-actions{justify-content:flex-end}.edit-buy-btn{padding:7px 11px;font-size:11px}@media(max-width:600px){#buyForm>div:first-child{grid-template-columns:1fr!important}.buy-lookup-card{flex-basis:96px;width:96px}.buy-lookup-card img{width:80px;height:112px}}`;document.head.appendChild(s)}
+  const start=()=>{styles();install();installEditButtons()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,0));else setTimeout(start,0);new MutationObserver(()=>{install();installEditButtons()}).observe(document.body,{childList:true,subtree:true});
 })();
