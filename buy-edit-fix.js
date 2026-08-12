@@ -7,7 +7,9 @@
     const st=getState();
     if(!panel || !st || !Array.isArray(st.buy)) return;
     panel.querySelectorAll('.buy-card').forEach((card,index)=>{
-      if(card.querySelector('[data-buy-edit]')) return;
+      // buy-search.js owns the primary Edit button. If it is already present,
+      // do not create a second control.
+      if(card.querySelector('.edit-buy-btn,[data-buy-edit]')) return;
       const wrap=document.createElement('div');
       wrap.className='book-actions buy-entry-actions';
       wrap.style.cssText='display:flex;gap:7px;margin-top:10px;flex-wrap:wrap';
