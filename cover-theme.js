@@ -36,7 +36,6 @@
   function start(){
     removeBooksToBuy();
     apply();
-    new MutationObserver(() => { removeBooksToBuy(); apply(); }).observe(document.body,{childList:true,subtree:true});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
