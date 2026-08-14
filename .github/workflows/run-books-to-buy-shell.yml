@@ -1,0 +1,60 @@
+name: Run Books to Buy Shell
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add and validate Books to Buy shell
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'data-tab="buy"' in s or 'id="buyPanel"' in s:
+              raise SystemExit('Books to Buy shell already exists; refusing duplicate changes.')
+          old_nav='<nav id="nav"><button class="tab active" data-tab="bookshelf">📚 Bookshelf</button><button class="tab" data-tab="stats">📊 Reading Stats</button><button class="tab" data-tab="fanfiction">🖤 Fanfiction</button></nav>'
+          new_nav='<nav id="nav"><button class="tab active" data-tab="bookshelf">📚 Bookshelf</button><button class="tab" data-tab="stats">📊 Reading Stats</button><button class="tab" data-tab="fanfiction">🖤 Fanfiction</button><button class="tab" data-tab="buy">🛍️ Books to Buy</button></nav>'
+          if old_nav not in s: raise SystemExit('Expected nav markup not found; no changes made.')
+          s=s.replace(old_nav,new_nav,1)
+          old_main='<main id="statsPanel" style="display:none"></main><main id="fanfictionPanel" style="display:none"></main>'
+          new_main=old_main+'''<main id="buyPanel" style="display:none"><div class="buy-shell"><div class="row" style="align-items:flex-start"><div><h2 class="section-title" style="margin-top:0">🛍️ Books to Buy</h2><div class="section-sub">Your next-to-read pile, all in one cozy place.</div></div><button class="btn primary" id="addBuyBookBtn" type="button">+ Add Book</button></div><div class="buy-empty" id="buyEmptyState"><div class="buy-empty-cover">📚</div><h3>Your Books to Buy list is empty</h3><p>We’ll build this from scratch, with the book cover front and center.</p></div></div></main>'''
+          if old_main not in s: raise SystemExit('Expected panel markup not found; no changes made.')
+          s=s.replace(old_main,new_main,1)
+          marker='</style></head>'
+          css='''/* BOOKS-TO-BUY-SHELL */\n.buy-shell{background:rgba(255,253,253,.86);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--shadow)}\n.buy-empty{min-height:330px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:35px;color:var(--muted)}\n.buy-empty-cover{width:120px;height:150px;border-radius:12px;background:linear-gradient(145deg,#ffe5ef,#f3dff4);display:flex;align-items:center;justify-content:center;font-size:48px;box-shadow:0 10px 25px rgba(190,115,145,.12);margin-bottom:18px}\n.buy-empty h3{font-family:Georgia,serif;color:#684352;font-size:21px;margin:0 0 7px}.buy-empty p{max-width:430px;margin:0;line-height:1.6;font-size:13px}@media(max-width:600px){.buy-shell{padding:15px}.buy-empty{min-height:280px;padding:25px 10px}}\n'''
+          if marker not in s: raise SystemExit('Expected style marker not found; no changes made.')
+          s=s.replace(marker,css+marker,1)
+          marker='</script>\n</body>'
+          js='''/* BOOKS-TO-BUY-SHELL-JS */\n(function(){const buyTab=document.querySelector('[data-tab="buy"]'),buyPanel=document.getElementById('buyPanel');if(!buyTab||!buyPanel)return;const tabs=[...document.querySelectorAll('#nav .tab')];const panels={bookshelf:document.getElementById('bookshelfPanel'),stats:document.getElementById('statsPanel'),fanfiction:document.getElementById('fanfictionPanel'),buy:buyPanel};buyTab.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();tabs.forEach(t=>t.classList.toggle('active',t===buyTab));Object.entries(panels).forEach(([key,p])=>{if(p)p.style.display=key==='buy'?'block':'none'});},true);document.getElementById('addBuyBookBtn')?.addEventListener('click',function(){const card=document.getElementById('modalCard'),modal=document.getElementById('modal');if(!card||!modal)return;card.innerHTML='<div class="row"><h2>🛍️ Add a Book</h2><button class="btn" type="button" id="closeBuyShellModal">Cancel</button></div><div class="empty" style="padding:28px 10px">The new book lookup and cover system is coming in the next step. ✨</div>';modal.classList.add('show');document.getElementById('closeBuyShellModal')?.addEventListener('click',()=>modal.classList.remove('show'));});})();\n'''
+          if marker not in s: raise SystemExit('Expected script marker not found; no changes made.')
+          s=s.replace(marker,js+marker,1)
+          p.write_text(s,encoding='utf-8')
+          check=p.read_text(encoding='utf-8')
+          for token in ('<!doctype html>','<html','</html>','<style>','</style>','<script>','</script>','data-tab="buy"','id="buyPanel"'):
+              if token not in check: raise SystemExit('Validation failed: '+token)
+          if check.count('<html')!=1 or check.count('</html>')!=1: raise SystemExit('Validation failed: HTML document count')
+          if check.count('<style>')!=check.count('</style>'): raise SystemExit('Validation failed: style balance')
+
+      - name: Commit shell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --check
+          git commit -m "Add Books to Buy shell"
+          git push
+
+      - name: Remove temporary workflows
+        run: |
+          git rm .github/workflows/add-books-to-buy-shell.yml .github/workflows/run-books-to-buy-shell.yml
+          git commit -m "Remove temporary Books to Buy build workflows"
+          git push
