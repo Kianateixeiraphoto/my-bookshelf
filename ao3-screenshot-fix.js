@@ -14,50 +14,27 @@
   function loadTesseract(){if(window.Tesseract)return Promise.resolve(window.Tesseract);if(tessPromise)return tessPromise;tessPromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=TESSERACT_SRC;s.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('OCR engine loaded but was unavailable.'));s.onerror=()=>reject(new Error('I could not load the screenshot reader. Please check your internet connection.'));document.head.appendChild(s);});return tessPromise;}
   async function preprocess(file){try{const bitmap=await createImageBitmap(file);const maxW=1800,scale=Math.min(2,maxW/bitmap.width),c=document.createElement('canvas');c.width=Math.round(bitmap.width*scale);c.height=Math.round(bitmap.height*scale);const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(bitmap,0,0,c.width,c.height);const img=ctx.getImageData(0,0,c.width,c.height);for(let i=0;i<img.data.length;i+=4){const y=.299*img.data[i]+.587*img.data[i+1]+.114*img.data[i+2],v=Math.max(0,Math.min(255,(y-128)*1.7+128));img.data[i]=img.data[i+1]=img.data[i+2]=v;}ctx.putImageData(img,0,0);return c;}catch{return file;}}
   async function ocr(file,progress){const T=await loadTesseract(),source=await preprocess(file),r=await T.recognize(source,'eng',{logger:m=>{if(m?.status==='recognizing text')progress?.(Math.round((m.progress||0)*100));}});return r.data?.text||'';}
-  function parse(text){
-    const t=clean(text),ls=lines(t);const si=ls.findIndex(x=>/^Summary\s*:/i.test(x));let title='',author='';
-    if(si>=2){title=ls[si-2].replace(/^Title:\s*/i,'').trim();author=ls[si-1].replace(/^by\s+/i,'').trim();}
-    if(!title){const ti=ls.find(x=>/^Title\s*:/i.test(x));if(ti)title=ti.replace(/^Title:\s*/i,'').trim();}
-    if(!author){const ai=ls.find(x=>/^by\s+/i.test(x));if(ai)author=ai.replace(/^by\s+/i,'').trim();}
-    const pub=(t.match(/(?:^|\n)\s*Published\s*:\s*(\d{4}-\d{2}-\d{2})/i)||[])[1]||'';
-    const comp=(t.match(/(?:^|\n)\s*Completed\s*:\s*(\d{4}-\d{2}-\d{2})/i)||[])[1]||'';
-    const data={title,author,rating:getBlock(ls,['Rating'])||inline(t,'Rating'),category:split(getBlock(ls,['Category'])||inline(t,'Category')),fandoms:split(getBlock(ls,['Fandoms','Fandom'])||inline(t,'Fandoms')),relationships:split(getBlock(ls,['Relationships','Relationship'])||inline(t,'Relationships')),characters:split(getBlock(ls,['Characters'])||inline(t,'Characters')),warnings:split(getBlock(ls,['Archive Warning'])||inline(t,'Archive Warning')),additionalTags:split(getBlock(ls,['Additional Tags'])||inline(t,'Additional Tags')),language:getBlock(ls,['Language'])||inline(t,'Language'),series:getBlock(ls,['Series'])||inline(t,'Series'),published:pub,completed:comp,words:Number(stat(t,'Words')||0),chapters:'',comments:Number(stat(t,'Comments')||0),kudos:Number(stat(t,'Kudos')||0),bookmarks:Number(stat(t,'Bookmarks')||0),hits:Number(stat(t,'Hits')||0),url:''};
-    const ch=t.match(/Chapters\s*:\s*([0-9]+\s*\/\s*[0-9]+|[0-9]+)/i);if(ch)data.chapters=ch[1].replace(/\s+/g,'');
-    if(!data.title)throw new Error('I could not find the AO3 work title. Please include the title, author, and metadata in the screenshot.');return data;
-  }
+  function parse(text){const t=clean(text),ls=lines(t);const si=ls.findIndex(x=>/^Summary\s*:/i.test(x));let title='',author='';if(si>=2){title=ls[si-2].replace(/^Title:\s*/i,'').trim();author=ls[si-1].replace(/^by\s+/i,'').trim();}if(!title){const ti=ls.find(x=>/^Title\s*:/i.test(x));if(ti)title=ti.replace(/^Title:\s*/i,'').trim();}if(!author){const ai=ls.find(x=>/^by\s+/i.test(x));if(ai)author=ai.replace(/^by\s+/i,'').trim();}const pub=(t.match(/(?:^|\n)\s*Published\s*:\s*(\d{4}-\d{2}-\d{2})/i)||[])[1]||'';const comp=(t.match(/(?:^|\n)\s*Completed\s*:\s*(\d{4}-\d{2}-\d{2})/i)||[])[1]||'';const data={title,author,rating:getBlock(ls,['Rating'])||inline(t,'Rating'),category:split(getBlock(ls,['Category'])||inline(t,'Category')),fandoms:split(getBlock(ls,['Fandoms','Fandom'])||inline(t,'Fandoms')),relationships:split(getBlock(ls,['Relationships','Relationship'])||inline(t,'Relationships')),characters:split(getBlock(ls,['Characters'])||inline(t,'Characters')),warnings:split(getBlock(ls,['Archive Warning'])||inline(t,'Archive Warning')),additionalTags:split(getBlock(ls,['Additional Tags'])||inline(t,'Additional Tags')),language:getBlock(ls,['Language'])||inline(t,'Language'),series:getBlock(ls,['Series'])||inline(t,'Series'),published:pub,completed:comp,words:Number(stat(t,'Words')||0),chapters:'',comments:Number(stat(t,'Comments')||0),kudos:Number(stat(t,'Kudos')||0),bookmarks:Number(stat(t,'Bookmarks')||0),hits:Number(stat(t,'Hits')||0),url:''};const ch=t.match(/Chapters\s*:\s*([0-9]+\s*\/\s*[0-9]+|[0-9]+)/i);if(ch)data.chapters=ch[1].replace(/\s+/g,'');if(!data.title)throw new Error('I could not find the AO3 work title. Please include the title, author, and metadata in the screenshot.');return data;}
   function setField(form,name,value){const el=form.elements[name];if(el)el.value=Array.isArray(value)?value.join(', '):(value??'');}
   function populate(form,d){['title','author','rating','language','series','published','completed','words','chapters','comments','kudos','bookmarks','hits'].forEach(k=>setField(form,k,d[k]));[['categoryText',d.category],['fandomsText',d.fandoms],['relationshipsText',d.relationships],['warningsText',d.warnings],['charactersText',d.characters],['additionalTagsText',d.additionalTags]].forEach(([k,v])=>setField(form,k,v));}
   function attach(input){if(input.dataset.ao3FixAttached==='1')return;input.dataset.ao3FixAttached='1';input.onchange=async()=>{const file=input.files?.[0];if(!file)return;const form=document.getElementById('ficForm'),btn=document.getElementById('screenshotAO3Btn'),status=document.getElementById('ao3Status');if(!form||!btn||!status)return;try{btn.disabled=true;btn.textContent='🔎 Reading screenshot…';status.textContent='Reading AO3 metadata from your screenshot…';const raw=await ocr(file,p=>status.textContent=`Reading AO3 screenshot… ${p}%`);const d=parse(raw);populate(form,d);form.dataset.ao3Loaded=JSON.stringify({...d,source:'screenshot'});status.textContent='✓ Got it! I filled in the AO3 information. Please review it, then save. 💕';}catch(e){console.error('AO3 screenshot importer:',e);status.textContent=e?.message||'I could not read that screenshot. Try a clearer AO3 metadata screenshot.';}finally{btn.disabled=false;btn.textContent='📸 Upload AO3 Screenshot';input.value='';}};}
   const observer=new MutationObserver(()=>{const input=document.getElementById('ao3ScreenshotFile');if(input)attach(input);});observer.observe(document.documentElement,{childList:true,subtree:true});const existing=document.getElementById('ao3ScreenshotFile');if(existing)attach(existing);
-  function installMobileAO3Fix(){
-    if(document.getElementById('ao3-mobile-scroll-fix'))return;
-    const style=document.createElement('style');style.id='ao3-mobile-scroll-fix';style.textContent=`
-      @media (max-width:700px){
-        #modal{display:none;align-items:flex-start!important;justify-content:center!important;padding:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important;height:100dvh!important;max-height:100dvh!important}
-        #modal.show{display:block!important}
-        #modalCard{width:100%!important;max-width:100%!important;min-height:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;border-radius:20px!important;padding:18px 14px 32px!important}
-        #modalCard form{height:auto!important;max-height:none!important;overflow:visible!important}
-        #modalCard .actions{position:static!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin-top:18px!important;padding:12px 0 24px!important;background:#fffafa!important}
-        #modalCard .actions button{min-height:48px!important;flex:1 1 140px!important}
-        #ficForm{padding-bottom:24px!important}
-        #ficForm button[type=submit]{position:sticky!important;bottom:8px!important;z-index:50!important;box-shadow:0 4px 16px rgba(90,45,63,.16)!important}
-      }
-    `;document.head.appendChild(style);
-  }
-  function repairModal(){
-    installMobileAO3Fix();
-    const modal=document.getElementById('modal'),card=document.getElementById('modalCard');
-    if(!modal||!card||!modal.classList.contains('show'))return;
-    if(window.matchMedia('(max-width:700px)').matches){modal.scrollTop=0;card.scrollTop=0;requestAnimationFrame(()=>{modal.scrollTop=0;card.scrollTop=0;});}
-  }
-  installMobileAO3Fix();
-  new MutationObserver(repairModal).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+  function installMobileAO3Fix(){if(document.getElementById('ao3-mobile-scroll-fix'))return;const style=document.createElement('style');style.id='ao3-mobile-scroll-fix';style.textContent=`@media (max-width:700px){#modal{display:none;align-items:flex-start!important;justify-content:center!important;padding:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important;height:100dvh!important;max-height:100dvh!important}#modal.show{display:block!important}#modalCard{width:100%!important;max-width:100%!important;min-height:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;border-radius:20px!important;padding:18px 14px 32px!important}#modalCard form{height:auto!important;max-height:none!important;overflow:visible!important}#modalCard .actions{position:static!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin-top:18px!important;padding:12px 0 24px!important;background:#fffafa!important}#modalCard .actions button{min-height:48px!important;flex:1 1 140px!important}#ficForm{padding-bottom:24px!important}#ficForm button[type=submit]{position:sticky!important;bottom:8px!important;z-index:50!important;box-shadow:0 4px 16px rgba(90,45,63,.16)!important}}`;document.head.appendChild(style);}
+  function repairModal(){installMobileAO3Fix();const modal=document.getElementById('modal'),card=document.getElementById('modalCard');if(!modal||!card||!modal.classList.contains('show'))return;if(window.matchMedia('(max-width:700px)').matches){modal.scrollTop=0;card.scrollTop=0;requestAnimationFrame(()=>{modal.scrollTop=0;card.scrollTop=0;});}}
+  installMobileAO3Fix();new MutationObserver(repairModal).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
 })();
-
-/* AO3 modal close/save reliability repair. */
+(() => {const isAO3=target=>!!target?.closest?.('#ficForm');const closeAO3=()=>{const modal=document.getElementById('modal');if(!modal)return;modal.classList.remove('show');modal.removeAttribute('style');};document.addEventListener('click',event=>{const button=event.target?.closest?.('#ficForm button');if(!button)return;const text=(button.textContent||'').trim().toLowerCase();if(text==='cancel')setTimeout(closeAO3,0);},true);document.addEventListener('submit',event=>{if(!isAO3(event.target))return;setTimeout(closeAO3,0);},true);})();
+/* Books to Buy shell — intentionally kept separate from AO3 functionality. */
 (() => {
-  const isAO3=target=>!!target?.closest?.('#ficForm');
-  const closeAO3=()=>{const modal=document.getElementById('modal');if(!modal)return;modal.classList.remove('show');modal.removeAttribute('style');};
-  document.addEventListener('click',event=>{const button=event.target?.closest?.('#ficForm button');if(!button)return;const text=(button.textContent||'').trim().toLowerCase();if(text==='cancel')setTimeout(closeAO3,0);},true);
-  document.addEventListener('submit',event=>{if(!isAO3(event.target))return;setTimeout(closeAO3,0);},true);
+  function installBuyShell(){
+    const nav=document.getElementById('nav'), panel=document.getElementById('buyPanel');
+    if(!nav||!panel)return;
+    let tab=nav.querySelector('.tab[data-tab="buy"]');
+    if(!tab){tab=document.createElement('button');tab.className='tab';tab.dataset.tab='buy';tab.type='button';tab.textContent='🛍️ Books to Buy';nav.appendChild(tab);}
+    if(tab.dataset.buyShellBound==='1')return;
+    tab.dataset.buyShellBound='1';
+    tab.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();nav.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===tab));['bookshelf','stats','fanfiction','buy'].forEach(x=>{const p=document.getElementById(x+'Panel');if(p)p.style.display=x==='buy'?'block':'none';});},true);
+    document.getElementById('addBuyBookBtn')?.addEventListener('click',()=>{const card=document.getElementById('modalCard'),modal=document.getElementById('modal');if(!card||!modal)return;card.innerHTML='<div class="row"><h2>🛍️ Add a Book</h2><button class="btn" type="button" id="closeBuyShellModal">Cancel</button></div><div class="empty" style="padding:28px 10px">The new book lookup and cover system is coming in the next step. ✨</div>';modal.classList.add('show');document.getElementById('closeBuyShellModal')?.addEventListener('click',()=>modal.classList.remove('show'));});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installBuyShell,{once:true});else installBuyShell();
 })();
