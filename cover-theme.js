@@ -8,6 +8,8 @@
   function sampleImage(img,cb){const work=document.createElement('canvas');work.width=32;work.height=32;const ctx=work.getContext('2d',{willReadFrequently:true});if(!ctx)return cb(FALLBACK);try{ctx.drawImage(img,0,0,32,32);const data=ctx.getImageData(0,0,32,32).data;let r=0,g=0,b=0,count=0;for(let i=0;i<data.length;i+=4){if(data[i+3]<150)continue;const rr=data[i],gg=data[i+1],bb=data[i+2];if(rr>245&&gg>245&&bb>245)continue;r+=rr;g+=gg;b+=bb;count++;}cb(count?{r:r/count,g:g/count,b:b/count}:FALLBACK);}catch(_){cb(FALLBACK);}}
   function themeCard(card){if(!card||card.dataset.coverThemePending==='1')return;const img=card.querySelector('.cover img');if(!img)return;card.dataset.coverThemePending='1';const finish=()=>{const sampler=new Image();sampler.crossOrigin='anonymous';sampler.onload=()=>sampleImage(sampler,rgb=>setTheme(card,rgb));sampler.onerror=()=>setTheme(card,FALLBACK);sampler.src=img.currentSrc||img.src;};if(img.complete&&img.naturalWidth)finish();else img.addEventListener('load',finish,{once:true});}
   function installStyles(){if(document.getElementById(STYLE_ID))return;const style=document.createElement('style');style.id=STYLE_ID;style.textContent=`
+    /* Match the successful Books to Buy visual treatment: cover first, compact text below. */
+    .book{display:flex;flex-direction:column;min-height:0;border-radius:20px;overflow:hidden;background:rgba(255,253,253,.94);box-shadow:var(--shadow)}
     .book[data-cover-theme-ready="1"]{background:linear-gradient(135deg,hsl(var(--cover-h),var(--cover-s),var(--cover-l)),hsl(var(--cover-h),calc(var(--cover-s)*.76),calc(var(--cover-l) + 7%)) 72%);border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));box-shadow:0 10px 30px hsla(var(--cover-h),58%,42%,.24)}
     .book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.24),hsla(var(--cover-h),calc(var(--cover-s)*.82),calc(var(--cover-l) + 4%),.10) 70%,transparent);color:#000}
     .book[data-cover-theme-ready="1"] .book-title,.book[data-cover-theme-ready="1"] .author,.book[data-cover-theme-ready="1"] .meta{color:#000}
@@ -15,8 +17,17 @@
     .book[data-cover-theme-ready="1"] .book-actions .btn:not(.primary){background:hsla(var(--cover-h),calc(var(--cover-s)*.72),96%,.92);border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));color:#000}
     .book[data-cover-theme-ready="1"] .cover{background:linear-gradient(145deg,hsl(var(--cover-h),calc(var(--cover-s)*.92),calc(var(--cover-l) - 1%)),hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) + 9%)))}
     .book[data-cover-theme-ready="1"] .heart{border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));color:#000;background:hsla(var(--cover-h),60%,96%,.78)}
-    @media(min-width:901px){.book .cover{height:285px}.book .cover img{min-height:285px}}
-    @media(max-width:600px){.book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.20),transparent 82%)}}
+    .book .cover{height:310px;min-height:310px}
+    .book .cover img{width:100%;height:100%;min-height:0;object-fit:cover}
+    .book .book-body{padding:15px;min-width:0}
+    .book .book-title{font-size:19px;line-height:1.2}
+    .book .author{font-size:13px;margin-top:4px}
+    .book .chips{margin:9px 0}
+    .book .meta{font-size:11px;line-height:1.6}
+    .book .book-actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+    .book .book-actions .btn{padding:7px 10px;font-size:11px}
+    @media(max-width:900px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+    @media(max-width:600px){.book .cover{height:240px;min-height:240px}.book .book-body{padding:11px}.book .book-title{font-size:16px}.book .book-actions .btn{padding:6px 8px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}
   `;document.head.appendChild(style);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
   function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js';script.defer=true;document.head.appendChild(script);}
