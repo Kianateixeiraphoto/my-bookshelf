@@ -19,6 +19,7 @@
     @media(max-width:600px){.book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.20),transparent 82%)}}
   `;document.head.appendChild(style);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
-  function start(){apply();}
+  function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js';script.defer=true;document.head.appendChild(script);}
+  function start(){apply();loadBooksToBuy();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
