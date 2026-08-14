@@ -1,0 +1,77 @@
+name: Add Books to Buy Shell
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  add-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add Books to Buy shell
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          if 'data-tab="buy"' in s or 'id="buyPanel"' in s:
+              raise SystemExit('Books to Buy shell already exists; refusing to make a second copy.')
+
+          old_nav = '<nav id="nav"><button class="tab active" data-tab="bookshelf">📚 Bookshelf</button><button class="tab" data-tab="stats">📊 Reading Stats</button><button class="tab" data-tab="fanfiction">🖤 Fanfiction</button></nav>'
+          new_nav = old_nav[:-6] + '<button class="tab" data-tab="buy">🛍️ Books to Buy</button></nav>'
+          if old_nav not in s:
+              raise SystemExit('Expected navigation markup was not found; no changes made.')
+          s = s.replace(old_nav, new_nav, 1)
+
+          old_main = '<main id="statsPanel" style="display:none"></main><main id="fanfictionPanel" style="display:none"></main>'
+          new_main = old_main + '''<main id="buyPanel" style="display:none">\n<div class="buy-shell">\n  <div class="row" style="align-items:flex-start">\n    <div><h2 class="section-title" style="margin-top:0">🛍️ Books to Buy</h2><div class="section-sub">Your next-to-read pile, all in one cozy place.</div></div>\n    <button class="btn primary" id="addBuyBookBtn" type="button">+ Add Book</button>\n  </div>\n  <div class="buy-empty" id="buyEmptyState">\n    <div class="buy-empty-cover">📚</div>\n    <h3>Your Books to Buy list is empty</h3>\n    <p>We’ll build this from scratch, with the book cover front and center.</p>\n  </div>\n</div>\n</main>'''
+          if old_main not in s:
+              raise SystemExit('Expected panel markup was not found; no changes made.')
+          s = s.replace(old_main, new_main, 1)
+
+          css_marker = '</style></head>'
+          css = '''\n/* BOOKS-TO-BUY-SHELL */\n.buy-shell{background:rgba(255,253,253,.86);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--shadow)}\n.buy-empty{min-height:330px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:35px;color:var(--muted)}\n.buy-empty-cover{width:120px;height:150px;border-radius:12px;background:linear-gradient(145deg,#ffe5ef,#f3dff4);display:flex;align-items:center;justify-content:center;font-size:48px;box-shadow:0 10px 25px rgba(190,115,145,.12);margin-bottom:18px}\n.buy-empty h3{font-family:Georgia,serif;color:#684352;font-size:21px;margin:0 0 7px}\n.buy-empty p{max-width:430px;margin:0;line-height:1.6;font-size:13px}\n@media(max-width:600px){.buy-shell{padding:15px}.buy-empty{min-height:280px;padding:25px 10px}}\n'''
+          if css_marker not in s:
+              raise SystemExit('Expected style closing marker was not found; no changes made.')
+          s = s.replace(css_marker, css + css_marker, 1)
+
+          script_marker = '</script>\n</body>'
+          js = '''\n/* BOOKS-TO-BUY-SHELL-JS */\n(function(){\n  const buyTab=document.querySelector('[data-tab="buy"]');\n  const buyPanel=document.getElementById('buyPanel');\n  const tabs=[...document.querySelectorAll('#nav .tab')];\n  const panels={bookshelf:document.getElementById('bookshelfPanel'),stats:document.getElementById('statsPanel'),fanfiction:document.getElementById('fanfictionPanel'),buy:buyPanel};\n  if(!buyTab||!buyPanel)return;\n  buyTab.addEventListener('click',function(e){\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    tabs.forEach(t=>t.classList.toggle('active',t===buyTab));\n    Object.entries(panels).forEach(([key,p])=>{if(p)p.style.display=key==='buy'?'block':'none'});\n  },true);\n  document.getElementById('addBuyBookBtn')?.addEventListener('click',function(){\n    const card=document.getElementById('modalCard');\n    const modal=document.getElementById('modal');\n    if(!card||!modal)return;\n    card.innerHTML='<div class="row"><h2>🛍️ Add a Book</h2><button class="btn" type="button" id="closeBuyShellModal">Cancel</button></div><div class="empty" style="padding:28px 10px">The new book lookup and cover system is coming in the next step. ✨</div>';\n    modal.classList.add('show');\n    document.getElementById('closeBuyShellModal')?.addEventListener('click',()=>modal.classList.remove('show'));\n  });\n})();\n'''
+          if script_marker not in s:
+              raise SystemExit('Expected final script marker was not found; no changes made.')
+          s = s.replace(script_marker, js + script_marker, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          # Guardrails: fail rather than publish a damaged page.
+          check = p.read_text(encoding='utf-8')
+          for token in ('<!doctype html>', '<html', '</html>', '<style>', '</style>', '<script>', '</script>', 'data-tab="buy"', 'id="buyPanel"'):
+              if token not in check:
+                  raise SystemExit(f'Validation failed: missing {token}')
+          if check.count('<html') != 1 or check.count('</html>') != 1:
+              raise SystemExit('Validation failed: unexpected HTML document count')
+          if check.count('<style>') != check.count('</style>'):
+              raise SystemExit('Validation failed: unbalanced style tags')
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --check
+          git commit -m "Add Books to Buy shell" || exit 0
+          git push
+
+      - name: Remove one-time workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/add-books-to-buy-shell.yml
+          git commit -m "Remove one-time Books to Buy shell workflow"
+          git push
