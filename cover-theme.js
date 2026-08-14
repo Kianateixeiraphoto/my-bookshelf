@@ -19,10 +19,24 @@
     @media(max-width:600px){.book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.20),transparent 82%)}}
   `;document.head.appendChild(style);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
-  function start(){apply();new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 
-  const loadScript=(id,src)=>{if(document.getElementById(id))return;const s=document.createElement('script');s.id=id;s.src=src;document.head.appendChild(s)};
-  const loadBuyTools=()=>{loadScript('buy-search-script','buy-search.js?v=20260811-3');loadScript('buy-edit-fix-script','buy-edit-fix.js?v=20260811-1')};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadBuyTools,{once:true});else setTimeout(loadBuyTools,0);
+  function removeBooksToBuy(){
+    const tab=document.querySelector('#nav .tab[data-tab="buy"]');
+    if(tab)tab.remove();
+    const panel=document.getElementById('buyPanel');
+    if(panel)panel.remove();
+    const buyStyle=document.getElementById('buy-card-cover-style');
+    if(buyStyle)buyStyle.remove();
+    if(window.state && Array.isArray(window.state.buy)){
+      window.state.buy=[];
+      if(typeof window.saveLocal==='function')window.saveLocal();
+    }
+  }
+
+  function start(){
+    removeBooksToBuy();
+    apply();
+    new MutationObserver(() => { removeBooksToBuy(); apply(); }).observe(document.body,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
