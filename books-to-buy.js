@@ -1,13 +1,79 @@
-/* Books to Buy — fresh rebuild */
+/* Books to Buy — fresh rebuild with cloud sync */
 (() => {
   const KEY = 'my-bookshelf-books-to-buy-v1';
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'buy-' + Date.now() + '-' + Math.random().toString(36).slice(2));
   let books = [];
+  let cloudClient = null;
+  let cloudSession = null;
+  let cloudSyncing = false;
 
   function load(){ try { books = JSON.parse(localStorage.getItem(KEY) || '[]'); if(!Array.isArray(books)) books=[]; } catch { books=[]; } }
   function save(){ localStorage.setItem(KEY, JSON.stringify(books)); }
+
+  function findSupabaseConfig(){
+    const text=[...document.scripts].map(s=>s.textContent||'').join('\n');
+    const url=text.match(/const\s+SUPABASE_URL\s*=\s*['"]([^'"]+)['"]/);
+    const key=text.match(/const\s+SUPABASE_KEY\s*=\s*['"]([^'"]+)['"]/);
+    return url&&key?{url:url[1],key:key[1]}:null;
+  }
+
+  function buyKey(b){ return String(b.id||((b.title||'')+'|'+(b.author||''))).trim().toLowerCase(); }
+  function mergeBooks(localBooks,cloudBooks){
+    const merged=new Map();
+    (cloudBooks||[]).forEach(b=>merged.set(buyKey(b),b));
+    (localBooks||[]).forEach(b=>{ const k=buyKey(b); if(!merged.has(k)) merged.set(k,b); });
+    return [...merged.values()];
+  }
+  function sameBooks(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+  function setCloudStatus(text){ const el=$('cloudStatus'); if(el) el.textContent=text; }
+
+  async function cloudLoad(){
+    if(!cloudClient||!cloudSession)return;
+    try{
+      const uid=cloudSession.user.id, newId='library:'+uid;
+      let {data:row,error}=await cloudClient.from('books').select('id,data,updated_at').eq('user_id',uid).eq('id',newId).maybeSingle();
+      if(error)throw error;
+      if(!row){ const fallback=await cloudClient.from('books').select('id,data,updated_at').eq('user_id',uid).eq('id','library').maybeSingle(); if(fallback.error)throw fallback.error; row=fallback.data; }
+      const cloudBooks=Array.isArray(row?.data?.booksToBuy)?row.data.booksToBuy:[];
+      const merged=mergeBooks(books,cloudBooks);
+      const localHadExtra=merged.length>cloudBooks.length || !sameBooks(merged,cloudBooks);
+      books=merged; save(); render();
+      setCloudStatus('Synced from cloud 💕');
+      if(localHadExtra)await cloudSave();
+    }catch(e){ console.warn('Books to Buy cloud load failed',e); }
+  }
+
+  async function cloudSave(){
+    if(!cloudClient||!cloudSession||cloudSyncing)return;
+    cloudSyncing=true;
+    try{
+      const uid=cloudSession.user.id, newId='library:'+uid;
+      let {data:row,error}=await cloudClient.from('books').select('id,data').eq('user_id',uid).eq('id',newId).maybeSingle();
+      if(error)throw error;
+      let rowId=newId, existingData={};
+      if(!row){ const fallback=await cloudClient.from('books').select('id,data').eq('user_id',uid).eq('id','library').maybeSingle(); if(fallback.error)throw fallback.error; row=fallback.data; }
+      if(row){ rowId=row.id; existingData=row.data&&typeof row.data==='object'?row.data:{}; }
+      const nextData={...existingData,booksToBuy:books};
+      if(row){ const result=await cloudClient.from('books').update({data:nextData,updated_at:new Date().toISOString()}).eq('id',rowId).eq('user_id',uid); if(result.error)throw result.error; }
+      else { const result=await cloudClient.from('books').insert({id:rowId,user_id:uid,data:nextData,updated_at:new Date().toISOString()}); if(result.error)throw result.error; }
+      setCloudStatus('Books to Buy synced 💕');
+    }catch(e){ console.warn('Books to Buy cloud save failed',e); }
+    finally{ cloudSyncing=false; }
+  }
+
+  async function initCloud(){
+    try{
+      if(!window.supabase?.createClient)return;
+      const cfg=findSupabaseConfig(); if(!cfg)return;
+      cloudClient=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,storage:window.localStorage,storageKey:'my-bookshelf-supabase-auth'}});
+      cloudClient.auth.onAuthStateChange((_event,session)=>{ cloudSession=session; if(session)setTimeout(()=>cloudLoad(),0); });
+      const result=await cloudClient.auth.getSession();
+      cloudSession=result.data.session;
+      if(cloudSession)await cloudLoad();
+    }catch(e){ console.warn('Books to Buy cloud init failed',e); }
+  }
 
   function injectStyles(){
     if($('books-to-buy-styles')) return;
@@ -42,7 +108,7 @@
     $('buyCancel').onclick=()=>modal.classList.remove('show');
     $('buyCover').oninput=()=>preview($('buyCover').value);
     $('buyLookup').onclick=lookup;
-    $('buyForm').onsubmit=e=>{e.preventDefault();const x=Object.fromEntries(new FormData(e.target).entries());const obj={...book,id:book.id||uid(),title:x.title.trim(),author:x.author.trim(),cover:x.cover.trim(),price:x.price.trim(),notes:x.notes.trim()};if(book.id)books=books.map(b=>b.id===book.id?obj:b);else books.unshift(obj);save();modal.classList.remove('show');render();};
+    $('buyForm').onsubmit=e=>{e.preventDefault();const x=Object.fromEntries(new FormData(e.target).entries());const obj={...book,id:book.id||uid(),title:x.title.trim(),author:x.author.trim(),cover:x.cover.trim(),price:x.price.trim(),notes:x.notes.trim()};if(book.id)books=books.map(b=>b.id===book.id?obj:b);else books.unshift(obj);save();modal.classList.remove('show');render();cloudSave();};
   }
   function preview(url){$('buyPreview').innerHTML=url?`<img src="${esc(url)}" alt="">`:'<span>📚</span>';}
 
@@ -68,11 +134,11 @@
     if(empty)empty.style.display=books.length?'none':'flex';
     list.innerHTML=books.map(b=>`<article class="buy-item"><div class="buy-cover">${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)} cover">`:'<div class="buy-cover-placeholder">📚</div>'}</div><div class="buy-item-body"><div class="buy-item-title">${esc(b.title||'Untitled')}</div><div class="buy-item-author">${esc(b.author||'Unknown author')}</div>${b.price?`<div class="buy-price">💰 ${esc(b.price)}</div>`:''}${b.notes?`<div class="buy-notes">📝 ${esc(b.notes)}</div>`:''}<div class="buy-actions"><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn" data-delete="${esc(b.id)}">Delete</button></div></div></article>`).join('');
     list.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.edit);if(b)openForm(b)});
-    list.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.delete);if(b&&confirm(`Remove “${b.title}” from Books to Buy?`)){books=books.filter(x=>x.id!==b.id);save();render();}});
+    list.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.delete);if(b&&confirm(`Remove “${b.title}” from Books to Buy?`)){books=books.filter(x=>x.id!==b.id);save();render();cloudSave();}});
   }
 
   function init(){
-    if(!$('buyPanel')||!$('addBuyBookBtn'))return; load(); injectStyles(); $('addBuyBookBtn').onclick=()=>openForm(); render();
+    if(!$('buyPanel')||!$('addBuyBookBtn'))return; load(); injectStyles(); $('addBuyBookBtn').onclick=()=>openForm(); render(); initCloud();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
