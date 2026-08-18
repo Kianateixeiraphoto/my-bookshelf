@@ -1,43 +1,23 @@
-/* Forest canopy and vines — visual-only, CSS-drawn decoration */
+/* Forest photography background — visual-only */
 body{position:relative;overflow-x:hidden}
 body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0}
 body::before{
-  opacity:.94;
+  opacity:.68;
   background:
-    radial-gradient(ellipse 155px 285px at 1% 29%,rgba(13,53,31,.97) 0 51%,transparent 53%),
-    radial-gradient(ellipse 126px 235px at 10% 53%,rgba(29,84,45,.96) 0 51%,transparent 53%),
-    radial-gradient(ellipse 145px 270px at 4% 86%,rgba(10,45,27,.98) 0 51%,transparent 53%),
-    radial-gradient(ellipse 155px 285px at 99% 29%,rgba(13,53,31,.97) 0 51%,transparent 53%),
-    radial-gradient(ellipse 126px 235px at 90% 53%,rgba(29,84,45,.96) 0 51%,transparent 53%),
-    radial-gradient(ellipse 145px 270px at 96% 86%,rgba(10,45,27,.98) 0 51%,transparent 53%),
-    radial-gradient(ellipse 72px 128px at 22% 97%,rgba(44,100,52,.82) 0 51%,transparent 53%),
-    radial-gradient(ellipse 72px 128px at 78% 97%,rgba(44,100,52,.82) 0 51%,transparent 53%),
-    linear-gradient(#153f28,#153f28) 4% 60%/18px 390px no-repeat,
-    linear-gradient(#214c2d,#214c2d) 11% 70%/13px 310px no-repeat,
-    linear-gradient(#0d3520,#0d3520) 2% 88%/20px 270px no-repeat,
-    linear-gradient(#153f28,#153f28) 96% 60%/18px 390px no-repeat,
-    linear-gradient(#214c2d,#214c2d) 89% 70%/13px 310px no-repeat,
-    linear-gradient(#0d3520,#0d3520) 98% 88%/20px 270px no-repeat,
-    radial-gradient(ellipse 4px 12px at 8% 9%,#a5bf69 0 44%,transparent 48%),
-    radial-gradient(ellipse 5px 14px at 15% 17%,#739a48 0 44%,transparent 48%),
-    radial-gradient(ellipse 4px 12px at 92% 9%,#a5bf69 0 44%,transparent 48%),
-    radial-gradient(ellipse 5px 14px at 85% 17%,#739a48 0 44%,transparent 48%);
-  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat,repeat,repeat;
-  background-size:auto,auto,auto,auto,auto,auto,auto,auto,18px 390px,13px 310px,20px 270px,18px 390px,13px 310px,20px 270px,180px 170px,210px 195px,180px 170px,210px 195px;
+    linear-gradient(90deg,rgba(4,29,18,.66),rgba(8,44,28,.28) 36%,rgba(8,44,28,.24) 64%,rgba(4,29,18,.66)),
+    linear-gradient(0deg,rgba(4,27,17,.55),transparent 48%,rgba(4,27,17,.32)),
+    url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1800&q=85") center/cover no-repeat;
 }
 body::after{
-  opacity:.82;
+  opacity:.38;
   background:
-    linear-gradient(113deg,transparent 0 2.3%,rgba(137,170,76,.62) 2.4% 2.65%,transparent 2.8%) 0 0/205px 250px repeat-y,
-    linear-gradient(247deg,transparent 0 2.3%,rgba(137,170,76,.62) 2.4% 2.65%,transparent 2.8%) 100% 0/205px 250px repeat-y,
-    radial-gradient(ellipse 7px 18px at 3% 12%,#88ad52 0 44%,transparent 48%) 0 0/170px 198px repeat-y,
-    radial-gradient(ellipse 7px 18px at 9% 30%,#547f3c 0 44%,transparent 48%) 0 0/190px 225px repeat-y,
-    radial-gradient(ellipse 7px 18px at 97% 12%,#88ad52 0 44%,transparent 48%) 100% 0/170px 198px repeat-y,
-    radial-gradient(ellipse 7px 18px at 91% 30%,#547f3c 0 44%,transparent 48%) 100% 0/190px 225px repeat-y,
-    linear-gradient(90deg,rgba(3,25,15,.33),transparent 17%,transparent 83%,rgba(3,25,15,.33));
+    linear-gradient(90deg,rgba(10,43,25,.52),transparent 28%,transparent 72%,rgba(10,43,25,.52)),
+    url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80") left center/42% 100% no-repeat,
+    url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80") right center/42% 100% no-repeat;
+  background-blend-mode:normal,soft-light,soft-light;
 }
 .app,header,nav{position:relative;z-index:1}
 @media(max-width:600px){
-  body::before{opacity:.66;background-size:auto,auto,auto,auto,auto,auto,0 0,0 0,11px 230px,9px 180px,12px 170px,11px 230px,9px 180px,12px 170px,145px 140px,165px 155px,145px 140px,165px 155px}
-  body::after{opacity:.5;background-size:155px 210px,155px 210px,130px 165px,145px 185px,130px 165px,145px 185px,auto}
+  body::before{opacity:.54;background-position:center,center,center}
+  body::after{opacity:.22;background-size:cover,62% 100%,62% 100%;background-position:center,left center,right center}
 }
