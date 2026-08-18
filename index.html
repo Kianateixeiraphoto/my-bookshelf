@@ -217,6 +217,37 @@ input:focus,select:focus,textarea:focus{
   .app{padding-top:22px}
 }
 
+
+/* FOREST-TREE-LAYERS-V1 — CSS-drawn woodland silhouettes */
+body:before{
+  opacity:.76;
+  background:
+    radial-gradient(ellipse 92px 168px at 3% 82%,rgba(24,72,42,.95) 0 50%,transparent 52%),
+    radial-gradient(ellipse 70px 136px at 11% 72%,rgba(38,91,50,.94) 0 50%,transparent 52%),
+    radial-gradient(ellipse 88px 154px at 17% 88%,rgba(20,63,37,.96) 0 50%,transparent 52%),
+    radial-gradient(ellipse 76px 142px at 97% 78%,rgba(22,69,40,.96) 0 50%,transparent 52%),
+    radial-gradient(ellipse 68px 130px at 89% 68%,rgba(43,98,54,.94) 0 50%,transparent 52%),
+    radial-gradient(ellipse 94px 164px at 83% 89%,rgba(18,59,35,.96) 0 50%,transparent 52%),
+    radial-gradient(ellipse 55px 106px at 27% 98%,rgba(32,81,44,.90) 0 50%,transparent 52%),
+    radial-gradient(ellipse 55px 106px at 73% 98%,rgba(32,81,44,.90) 0 50%,transparent 52%),
+    linear-gradient(rgba(18,62,36,.95),rgba(18,62,36,.95)) 3% 88%/15px 185px no-repeat,
+    linear-gradient(rgba(26,72,40,.94),rgba(26,72,40,.94)) 11% 80%/12px 170px no-repeat,
+    linear-gradient(rgba(14,53,31,.96),rgba(14,53,31,.96)) 17% 91%/16px 155px no-repeat,
+    linear-gradient(rgba(18,62,36,.95),rgba(18,62,36,.95)) 97% 85%/15px 185px no-repeat,
+    linear-gradient(rgba(26,72,40,.94),rgba(26,72,40,.94)) 89% 78%/12px 170px no-repeat,
+    linear-gradient(rgba(14,53,31,.96),rgba(14,53,31,.96)) 83% 92%/16px 155px no-repeat,
+    radial-gradient(ellipse 4px 11px at 8% 8%,#9fb96b 0 45%,transparent 49%),
+    radial-gradient(ellipse 5px 13px at 14% 15%,#668e45 0 45%,transparent 49%),
+    radial-gradient(ellipse 4px 11px at 84% 9%,#95b262 0 45%,transparent 49%),
+    radial-gradient(ellipse 5px 13px at 93% 16%,#557d3b 0 45%,transparent 49%),
+    radial-gradient(#d7c477 1px,transparent 1px);
+  background-size:auto,auto,auto,auto,auto,auto,auto,auto,15px 185px,12px 170px,16px 155px,15px 185px,12px 170px,16px 155px,190px 155px,230px 190px,210px 170px,250px 205px,31px 31px;
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat,repeat,repeat,repeat;
+}
+@media(max-width:600px){
+  body:before{opacity:.53;background-size:auto,auto,auto,auto,auto,auto,0 0,0 0,11px 130px,9px 115px,12px 100px,11px 130px,9px 115px,12px 100px,145px 130px,175px 155px,160px 140px,185px 165px,28px 28px}
+}
+
 </style></head>
 <body><div class="app">
 <div id="cloudBar" class="panel" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:12px"><div><b>☁️ Cloud Library</b><div id="cloudStatus" class="status">Not signed in</div></div><div class="actions"><button class="btn" id="syncBtn">☁️ Sync Now</button><button class="btn" id="authBtn">Log In</button><button class="btn" id="signOutBtn" style="display:none">Sign Out</button></div></div>
