@@ -29,7 +29,7 @@
     @media(max-width:900px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
     @media(max-width:600px){.book .cover{height:240px;min-height:240px}.book .book-body{padding:11px}.book .book-title{font-size:16px}.book .book-actions .btn{padding:6px 8px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}
   `;document.head.appendChild(style);}
-  function loadFloralVines(){if(document.getElementById('floral-vines-styles'))return;const link=document.createElement('link');link.id='floral-vines-styles';link.rel='stylesheet';link.href='floral-vines.css?v=forest-20260818';document.head.appendChild(link);}
+  function loadFloralVines(){if(document.getElementById('floral-vines-styles'))return;const link=document.createElement('link');link.id='floral-vines-styles';link.rel='stylesheet';link.href='floral-vines.css?v=forest-photo-20260818';document.head.appendChild(link);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
   function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js';script.defer=true;document.head.appendChild(script);}
   function start(){loadFloralVines();apply();loadBooksToBuy();}
