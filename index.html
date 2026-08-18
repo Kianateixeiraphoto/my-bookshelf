@@ -81,6 +81,142 @@ input,select,textarea{background:#fffdfc;border-color:#efd5dd}input:focus,select
 .modal{background:rgba(76,43,56,.25)}.modal-card{background:#fffafc;border-color:#efd5dd}
 @media(max-width:600px){body:after{opacity:.48}.app{padding-top:20px}nav{border-radius:22px}}
 
+
+/* FOREST-LIBRARY-THEME-V1 — visual-only CSS override */
+:root{
+  --bg:#17382c;
+  --card:#fff8e8;
+  --ink:#203d2f;
+  --muted:#62745b;
+  --line:#c9b77c;
+  --accent:#55733e;
+  --accent2:#e5edd3;
+  --danger:#a6523d;
+  --shadow:0 12px 30px rgba(8,35,24,.22);
+}
+body{
+  background:
+    radial-gradient(ellipse at 50% -10%,rgba(244,225,166,.24),transparent 36%),
+    radial-gradient(circle at 12% 18%,rgba(106,143,70,.20),transparent 24%),
+    radial-gradient(circle at 88% 76%,rgba(202,174,92,.12),transparent 26%),
+    linear-gradient(145deg,#0d2a20 0%,#183d2d 47%,#0e3025 100%);
+  color:var(--ink);
+}
+body:before{
+  z-index:0;
+  opacity:.42;
+  background-image:
+    radial-gradient(ellipse 4px 11px at 8% 8%,#8fae62 0 45%,transparent 49%),
+    radial-gradient(ellipse 5px 13px at 14% 15%,#5f873f 0 45%,transparent 49%),
+    radial-gradient(ellipse 4px 11px at 21% 5%,#b7c77b 0 45%,transparent 49%),
+    radial-gradient(ellipse 4px 12px at 84% 9%,#88a55a 0 45%,transparent 49%),
+    radial-gradient(ellipse 5px 13px at 93% 16%,#507838 0 45%,transparent 49%),
+    radial-gradient(ellipse 4px 11px at 98% 27%,#b1c477 0 45%,transparent 49%),
+    radial-gradient(#d7c477 1px,transparent 1px);
+  background-size:190px 155px,230px 190px,170px 150px,210px 170px,250px 205px,180px 160px,31px 31px;
+}
+body:after{
+  z-index:0;
+  opacity:.9;
+  background:
+    linear-gradient(112deg,transparent 0 2%,rgba(136,161,79,.58) 2.1% 2.3%,transparent 2.4%) 0 0/190px 245px repeat-y,
+    linear-gradient(248deg,transparent 0 2%,rgba(136,161,79,.58) 2.1% 2.3%,transparent 2.4%) 100% 0/190px 245px repeat-y,
+    radial-gradient(ellipse 7px 17px at 3% 12%,#6f963e 0 43%,transparent 47%) 0 0/155px 180px repeat-y,
+    radial-gradient(ellipse 7px 17px at 8% 28%,#a8bc69 0 43%,transparent 47%) 0 0/180px 215px repeat-y,
+    radial-gradient(ellipse 7px 17px at 97% 15%,#5e873b 0 43%,transparent 47%) 100% 0/165px 190px repeat-y,
+    radial-gradient(ellipse 7px 17px at 91% 32%,#b0c873 0 43%,transparent 47%) 100% 0/190px 220px repeat-y,
+    linear-gradient(90deg,rgba(7,29,20,.32),transparent 13%,transparent 87%,rgba(7,29,20,.32));
+}
+.app{z-index:1;max-width:1320px;padding-top:34px}
+#cloudBar,.panel,.buy-shell{
+  background:rgba(255,248,232,.92);
+  border-color:rgba(193,166,89,.72);
+  box-shadow:var(--shadow);
+}
+h1{
+  color:#f3dc9a;
+  font-style:normal;
+  letter-spacing:.5px;
+  text-shadow:0 2px 0 #1b3d2c,0 5px 15px rgba(0,0,0,.24);
+}
+.subtitle{color:#d7e2bb}
+nav{
+  background:rgba(20,54,38,.80);
+  border-color:rgba(209,185,105,.64);
+  box-shadow:0 8px 22px rgba(5,23,15,.25);
+}
+.tab{color:#e6edcf}
+.tab:hover{background:rgba(231,239,205,.13)}
+.tab.active{
+  color:#213c2d;
+  background:linear-gradient(135deg,#d9b968,#f2dd99);
+  border-color:#d1ae59;
+  box-shadow:0 5px 13px rgba(0,0,0,.24);
+}
+.btn{
+  background:#fff9e9;
+  border-color:#c9b77c;
+  color:#284432;
+}
+.btn:hover{border-color:#8b9c50;background:#f2f0d8}
+.btn.primary{
+  color:#fff9e9;
+  background:linear-gradient(135deg,#476e38,#73954a);
+  border-color:#57783e;
+}
+.stat,.reading-card,.buy-card,.book{
+  background:rgba(255,249,233,.96);
+  border-color:#d3c28b;
+  box-shadow:0 8px 22px rgba(10,45,28,.15);
+}
+.stat b{color:#365e3d}
+.section-title,.book-title,.buy-empty h3{color:#31583a}
+.section-sub,.author,.meta,.muted{color:#62735c}
+input,select,textarea{
+  background:#fffbed;
+  border-color:#cfbd83;
+  color:#284432;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#6d8d47;
+  box-shadow:0 0 0 3px rgba(166,192,103,.32);
+}
+.cover{background:linear-gradient(145deg,#dfe9bd,#a9c274)}
+.heart{background:#fff9e9;border-color:#d2bf7f;color:#b07235}
+.chip{background:#e3edca;color:#436239}
+#currentlySection .panel,#archivedSection .panel{
+  background:rgba(255,248,232,.88);
+  border-color:#d0bf86;
+}
+#currentlySection .section-title,#archivedSection .section-title{color:#315f40}
+#currentlySection .section-sub,#archivedSection .section-sub{color:#657a60}
+#currentlySection .chip,#archivedSection .chip{background:#e3edca;color:#42633d}
+#dnfSection{
+  background:linear-gradient(135deg,rgba(246,235,205,.96),rgba(226,215,173,.88));
+  border-color:#c5a86a;
+  box-shadow:0 10px 30px rgba(37,55,29,.18);
+}
+#dnfSection .section-title{color:#80623a}
+#dnfSection .section-sub{color:#887757}
+#dnfSection .book{background:rgba(255,249,233,.96);border-color:#d3c28b;box-shadow:0 7px 20px rgba(57,69,36,.12)}
+#dnfSection .chip{background:#eee0b2;color:#715c35}
+.tag-picker{background:#fffbed;border-color:#d1c08c}
+.tag-picker-head b,.tag-option{color:#31513a}
+.tag-section{background:rgba(246,242,216,.78);border-color:#d8ca9d}
+.tag-section h4{color:#49633b}
+.tag-option{background:#fffbed;border-color:#d6c89a}
+.tag-option:hover{border-color:#7e9b4e;background:#eaf0d1}
+.tag-option:has(input:checked){background:#e5edc8;border-color:#7c9849;color:#3e5f38}
+.tag-option input{accent-color:#55733e}
+.modal{background:rgba(8,35,24,.56)}
+.modal-card{background:#fff9e9;border-color:#c9b77c;box-shadow:0 24px 80px rgba(4,24,14,.48)}
+.buy-empty-cover{background:linear-gradient(145deg,#e6efc6,#bdcf82);box-shadow:0 10px 25px rgba(24,65,38,.22)}
+.buy-card a{color:#54793e}
+@media(max-width:600px){
+  body:after{opacity:.45;background-size:145px 210px,145px 210px,120px 150px,145px 180px,125px 155px,145px 180px,auto}
+  .app{padding-top:22px}
+}
+
 </style></head>
 <body><div class="app">
 <div id="cloudBar" class="panel" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:12px"><div><b>☁️ Cloud Library</b><div id="cloudStatus" class="status">Not signed in</div></div><div class="actions"><button class="btn" id="syncBtn">☁️ Sync Now</button><button class="btn" id="authBtn">Log In</button><button class="btn" id="signOutBtn" style="display:none">Sign Out</button></div></div>
