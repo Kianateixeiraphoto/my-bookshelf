@@ -127,14 +127,52 @@
     }catch(e){status.textContent='Lookup unavailable right now. You can still enter the book manually.';}
   }
 
+  function sameBuyBook(a,b){ return String(a?.id||'')===String(b?.id||'') || buyKey(a)===buyKey(b); }
+  function shelfKey(b){ return ((b?.title||'')+'|'+(b?.author||'')).trim().toLowerCase(); }
+  function makeShelfBook(b){ return {id:uid(),title:String(b.title||'').trim(),author:String(b.author||'').trim(),cover:b.cover||'',price:b.price||'',notes:b.notes||'',status:'Want to Read',rating:0,tags:[]}; }
+
+  async function saveMoveToCloud(b,shelfBook){
+    if(!cloudClient||!cloudSession)return {ok:true,booksToBuy:books,duplicate:false};
+    try{
+      const userId=cloudSession.user.id, newId='library:'+userId;
+      let {data:row,error}=await cloudClient.from('books').select('id,data').eq('user_id',userId).eq('id',newId).maybeSingle();
+      if(error)throw error;
+      if(!row){const fallback=await cloudClient.from('books').select('id,data').eq('user_id',userId).eq('id','library').maybeSingle();if(fallback.error)throw fallback.error;row=fallback.data;}
+      const existingData=row?.data&&typeof row.data==='object'?row.data:{};
+      const cloudBuyBooks=Array.isArray(existingData.booksToBuy)?existingData.booksToBuy:books;
+      const nextBuyBooks=cloudBuyBooks.filter(x=>!sameBuyBook(x,b));
+      const existingShelfBooks=Array.isArray(existingData.books)?existingData.books:[];
+      const duplicate=existingShelfBooks.some(x=>shelfKey(x)===shelfKey(shelfBook));
+      const nextData={...existingData,books:duplicate?existingShelfBooks:[...existingShelfBooks,shelfBook],booksToBuy:nextBuyBooks};
+      const now=new Date().toISOString();
+      const result=row
+        ?await cloudClient.from('books').update({data:nextData,updated_at:now}).eq('id',row.id).eq('user_id',userId)
+        :await cloudClient.from('books').insert({id:newId,user_id:userId,data:nextData,updated_at:now});
+      if(result.error)throw result.error;
+      return {ok:true,booksToBuy:nextBuyBooks,duplicate};
+    }catch(e){console.warn('Move to Bookshelf cloud save failed',e);return {ok:false};}
+  }
+
+  async function moveToBookshelf(b){
+    const shelfBook=makeShelfBook(b);
+    if(!shelfBook.title){alert('Add a title before moving this book to your bookshelf.');return;}
+    if(!confirm('Move “'+shelfBook.title+'” to Bookshelf?'))return;
+    const move=await saveMoveToCloud(b,shelfBook);
+    if(!move.ok){alert('The move could not be saved to the cloud, so this book is still in Books to Buy. Please try again.');return;}
+    books=books.filter(x=>!sameBuyBook(x,b));save();render();
+    window.dispatchEvent(new CustomEvent('books-to-buy-moved',{detail:{book:shelfBook,booksToBuy:move.booksToBuy,duplicate:move.duplicate}}));
+    setCloudStatus(move.duplicate?'Already on your bookshelf — removed from Books to Buy 💕':'Moved to Bookshelf and synced 💕');
+  }
+
   function render(){
     const panel=$('buyPanel'); if(!panel)return;
     const empty=$('buyEmptyState'); let list=$('buyList');
     if(!list){list=document.createElement('div');list.id='buyList';list.className='buy-list';empty?.after(list);}
     if(empty)empty.style.display=books.length?'none':'flex';
-    list.innerHTML=books.map(b=>`<article class="buy-item"><div class="buy-cover">${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)} cover">`:'<div class="buy-cover-placeholder">📚</div>'}</div><div class="buy-item-body"><div class="buy-item-title">${esc(b.title||'Untitled')}</div><div class="buy-item-author">${esc(b.author||'Unknown author')}</div>${b.price?`<div class="buy-price">💰 ${esc(b.price)}</div>`:''}${b.notes?`<div class="buy-notes">📝 ${esc(b.notes)}</div>`:''}<div class="buy-actions"><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn" data-delete="${esc(b.id)}">Delete</button></div></div></article>`).join('');
+    list.innerHTML=books.map(b=>`<article class="buy-item"><div class="buy-cover">${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)} cover">`:'<div class="buy-cover-placeholder">📚</div>'}</div><div class="buy-item-body"><div class="buy-item-title">${esc(b.title||'Untitled')}</div><div class="buy-item-author">${esc(b.author||'Unknown author')}</div>${b.price?`<div class="buy-price">💰 ${esc(b.price)}</div>`:''}${b.notes?`<div class="buy-notes">📝 ${esc(b.notes)}</div>`:''}<div class="buy-actions"><button class="btn primary" data-move="${esc(b.id)}">Move to Bookshelf</button><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn" data-delete="${esc(b.id)}">Delete</button></div></div></article>`).join('');
+    list.querySelectorAll('[data-move]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.move);if(b)moveToBookshelf(b)});
     list.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.edit);if(b)openForm(b)});
-    list.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.delete);if(b&&confirm(`Remove “${b.title}” from Books to Buy?`)){books=books.filter(x=>x.id!==b.id);save();render();cloudSave();}});
+    list.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.delete);if(b&&confirm('Remove “'+b.title+'” from Books to Buy?')){books=books.filter(x=>x.id!==b.id);save();render();cloudSave();}});
   }
 
   function init(){
