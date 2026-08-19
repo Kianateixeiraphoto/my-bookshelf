@@ -13,7 +13,7 @@
 
     function renderFourSections() {
       originalRender();
-      const books = Array.isArray(state.books) ? state.books : [];
+      const books = (typeof state !== 'undefined' && Array.isArray(state.books)) ? state.books : [];
       const norm = b => String(b.status || '').trim().toLowerCase();
       const q = ($('bookSearch')?.value || '').toLowerCase();
       const sf = String($('statusFilter')?.value || '').trim().toLowerCase();
