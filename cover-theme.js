@@ -34,7 +34,8 @@
   function loadFloralVines(){if(document.getElementById('floral-vines-styles'))return;const link=document.createElement('link');link.id='floral-vines-styles';link.rel='stylesheet';link.href='floral-vines.css?v=forest-photo-20260818';document.head.appendChild(link);}
   function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js';script.defer=true;document.head.appendChild(script);}
   function loadSpiceFix(){if(document.getElementById('spice-rating-fix'))return;const script=document.createElement('script');script.id='spice-rating-fix';script.src='spice-rating-fix.js?v=20260818';script.defer=true;document.head.appendChild(script);}
+  function loadUnreadSection(){if(document.getElementById('unread-section-script'))return;const script=document.createElement('script');script.id='unread-section-script';script.src='unread-section.js?v=20260818';script.defer=true;document.head.appendChild(script);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
-  function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();}
+  function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();loadUnreadSection();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
