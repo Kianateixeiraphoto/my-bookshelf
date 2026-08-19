@@ -7,12 +7,13 @@
     '4 chilis': '🌶️🌶️🌶️🌶️ 4 chilis',
     '5 chilis': '🌶️🌶️🌶️🌶️🌶️ 5 chilis'
   };
+  const normalize = value => VALUE_MAP[value] || value || 'Not rated';
 
-  function fix() {
+  function fix(book) {
     const select = document.querySelector('#bookForm select[name="spice"]');
     if (!select) return;
-    const raw = select.value.trim();
-    if (VALUE_MAP[raw]) select.value = VALUE_MAP[raw];
+    const stored = normalize(book?.spice);
+    if ([...select.options].some(option => option.value === stored)) select.value = stored;
   }
 
   function start() {
@@ -20,8 +21,8 @@
     if (typeof original !== 'function') return;
     window.addBook = function(book = {}) {
       original.call(this, book);
-      requestAnimationFrame(fix);
-      setTimeout(fix, 0);
+      requestAnimationFrame(() => fix(book));
+      setTimeout(() => fix(book), 0);
     };
   }
 
