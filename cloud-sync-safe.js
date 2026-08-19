@@ -1,15 +1,52 @@
-/* CLOUD-SYNC-SAFE-V1 — merge-first cloud sync with verification */
+/* CLOUD-SYNC-SAFE-V2 — merge-first cloud sync with persisted Supabase session */
 (() => {
   if (window.__cloudSyncSafeInstalled) return;
   window.__cloudSyncSafeInstalled = true;
 
   const originalCloudLoad = window.cloudLoad;
-  const originalSync = window.sync;
   const key = b => ((b?.title || b?.name || '') + '|' + (b?.author || '')).trim().toLowerCase();
 
-  async function getCloud() {
-    if (!window.session || typeof window.api !== 'function') return null;
-    const uid = window.session.user.id;
+  // Always use Supabase's persisted auth session as the source of truth.
+  // The app's window.session can briefly be null/stale while the page is
+  // restoring auth, especially immediately after an edit/save.
+  let authClient = null;
+  function getAuthClient() {
+    if (authClient) return authClient;
+    if (window.supabase?.createClient && window.SUPABASE_URL && window.SUPABASE_KEY) {
+      authClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, storage: window.localStorage, storageKey: 'my-bookshelf-supabase-auth' }
+      });
+    }
+    return authClient;
+  }
+
+  async function ensureSession() {
+    // Reuse a current, unexpired app session when possible.
+    if (window.session?.user?.id && (!window.session.expires_at || window.session.expires_at * 1000 > Date.now() + 30000)) {
+      return window.session;
+    }
+
+    try {
+      const client = getAuthClient();
+      if (client) {
+        const result = await client.auth.getSession();
+        const s = result?.data?.session;
+        if (s?.user?.id) {
+          window.session = s;
+          if (typeof window.setSession === 'function') window.setSession(s);
+          return s;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not restore persisted Supabase session', e);
+    }
+
+    return null;
+  }
+
+  async function getCloud(session) {
+    if (!session || typeof window.api !== 'function') return null;
+    const uid = session.user.id;
     const newId = 'library:' + uid;
     let rows = await window.api('/rest/v1/books?select=data,updated_at&user_id=eq.' + encodeURIComponent(uid) + '&id=eq.' + encodeURIComponent(newId));
     if (!rows?.length) rows = await window.api('/rest/v1/books?select=data,updated_at&user_id=eq.' + encodeURIComponent(uid) + '&id=eq.library');
@@ -40,9 +77,10 @@
   }
 
   async function safeCloudLoad() {
-    if (!window.session) return;
+    const s = await ensureSession();
+    if (!s) return;
     try {
-      const row = await getCloud();
+      const row = await getCloud(s);
       if (!row?.data) {
         if (typeof window.render === 'function') window.render();
         return;
@@ -67,14 +105,16 @@
   }
 
   async function safeSync() {
-    if (!window.session) {
+    const s = await ensureSession();
+    if (!s) {
       if (typeof window.openAuth === 'function') window.openAuth('login');
       return;
     }
+
     try {
-      const cloudRow = await getCloud();
+      const cloudRow = await getCloud(s);
       const merged = mergeState(window.state || {}, cloudRow?.data || {});
-      const uid = window.session.user.id;
+      const uid = s.user.id;
       const newId = 'library:' + uid;
       const now = new Date().toISOString();
       const payload = { ...merged };
@@ -90,7 +130,7 @@
         }
       }
 
-      const verify = await getCloud();
+      const verify = await getCloud(s);
       const savedBooks = Array.isArray(verify?.data?.books) ? verify.data.books : [];
       const savedFics = Array.isArray(verify?.data?.fanfiction) ? verify.data.fanfiction : [];
       const savedBuy = Array.isArray(verify?.data?.booksToBuy) ? verify.data.booksToBuy : [];
