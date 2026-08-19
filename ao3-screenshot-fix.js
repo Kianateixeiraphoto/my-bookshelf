@@ -38,3 +38,55 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installBuyShell,{once:true});else installBuyShell();
 })();
+/* UNREAD-SECTION-V1 — loaded by index.html through ao3-screenshot-fix.js */
+(() => {
+  const UNREAD_STATUSES=new Set(['unread','want to read','to read','tbr','not started']);
+  const norm=v=>String(v??'').trim().toLowerCase();
+  const isUnread=b=>UNREAD_STATUSES.has(norm(b?.status));
+  const getState=()=>window.state;
+  function ensureSection(){
+    const panel=document.getElementById('bookshelfPanel');
+    if(!panel)return null;
+    let section=document.getElementById('unreadSection');
+    if(!section){
+      section=document.createElement('div');
+      section.id='unreadSection';
+      section.className='section';
+      const dnf=document.getElementById('dnfSection');
+      panel.insertBefore(section,dnf||null);
+    }
+    return section;
+  }
+  function renderUnread(){
+    const section=ensureSection();
+    const state=getState();
+    if(!section||!state||!Array.isArray(state.books)||typeof window.bookCard!=='function')return;
+    const q=norm(document.getElementById('bookSearch')?.value);
+    const rf=Number(document.getElementById('ratingFilter')?.value||0);
+    const sf=norm(document.getElementById('statusFilter')?.value);
+    const books=state.books.filter(b=>{
+      if(!isUnread(b))return false;
+      const searchable=JSON.stringify(b).toLowerCase();
+      return (!q||searchable.includes(q))&&(!rf||Number(b.rating||0)>=rf)&&(!sf||norm(b.status)===sf);
+    });
+    section.innerHTML='<div class="section-title">📖 Unread</div><div class="section-sub">Books you own or have saved but haven’t started yet. 🌿</div>'+(books.length?'<div class="shelf">'+books.map(b=>window.bookCard(b)).join('')+'</div>':'<div class="panel empty">No unread books yet. 📚✨</div>');
+  }
+  function patchRender(){
+    if(typeof window.render!=='function'||window.render.__unreadPatched)return;
+    const original=window.render;
+    const wrapped=function(){original();renderUnread();};
+    wrapped.__unreadPatched=true;
+    window.render=wrapped;
+    renderUnread();
+  }
+  function installStyles(){
+    if(document.getElementById('unread-inline-styles'))return;
+    const style=document.createElement('style');style.id='unread-inline-styles';
+    style.textContent='#unreadSection{order:4}#unreadSection .section-title{color:#315f40}#unreadSection .section-sub{color:#657a60}#unreadSection .panel{background:rgba(255,248,232,.88);border-color:#d0bf86}#unreadSection .chip{background:#e3edca;color:#42633d}';
+    document.head.appendChild(style);
+  }
+  function start(){ensureSection();installStyles();patchRender();renderUnread();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  const observer=new MutationObserver(()=>{if(!document.getElementById('unreadSection'))ensureSection();});
+  observer.observe(document.body,{childList:true,subtree:true});
+})();
