@@ -1,55 +1,64 @@
-/* My Bookshelf — Unread section */
+/* Bookshelf status organization: Currently Reading / Unread / Already Read / DNF */
 (() => {
-  const UNREAD_STATUSES = new Set(['unread','want to read','to read','tbr','not started']);
-  const section = () => document.getElementById('unreadSection');
-  const norm = b => String(b?.status || '').trim().toLowerCase();
-  const isUnread = b => UNREAD_STATUSES.has(norm(b));
-  function cardList(items){
-    return items.length ? '<div class="shelf">' + items.map(bookCard).join('') + '</div>' : '<div class="panel empty">No unread books yet. 📚✨</div>';
+  function install() {
+    if (window.__fourShelfSectionsInstalled || typeof window.render !== 'function') return;
+    window.__fourShelfSectionsInstalled = true;
+
+    const originalRender = window.render;
+    const READ_STATUSES = new Set(['read','finished','complete','completed','archived']);
+    const CURRENT_STATUSES = new Set(['currently reading']);
+    const DNF_STATUSES = new Set(['dnf']);
+
+    function renderFourSections() {
+      originalRender();
+      const books = state.books || [];
+      const norm = b => String(b.status || '').trim().toLowerCase();
+      const q = ($('bookSearch')?.value || '').toLowerCase();
+      const sf = String($('statusFilter')?.value || '').trim().toLowerCase();
+      const rf = Number($('ratingFilter')?.value || 0);
+      const filtered = books.filter(b =>
+        (!q || JSON.stringify(b).toLowerCase().includes(q)) &&
+        (!sf || norm(b) === sf) &&
+        (!rf || Number(b.rating) >= rf)
+      );
+
+      const current = filtered.filter(b => CURRENT_STATUSES.has(norm(b)));
+      const unread = filtered.filter(b => !CURRENT_STATUSES.has(norm(b)) && !DNF_STATUSES.has(norm(b)) && !READ_STATUSES.has(norm(b)));
+      const read = filtered.filter(b => READ_STATUSES.has(norm(b)));
+      const dnf = filtered.filter(b => DNF_STATUSES.has(norm(b)));
+
+      let unreadSection = document.getElementById('unreadSection');
+      if (!unreadSection) {
+        unreadSection = document.createElement('div');
+        unreadSection.id = 'unreadSection';
+        unreadSection.className = 'section';
+      }
+
+      const fill = (el, title, subtitle, items, emptyText) => {
+        if (!el) return;
+        el.innerHTML = '<div class="section-title">'+title+'</div><div class="section-sub">'+subtitle+'</div>' +
+          (items.length ? '<div class="shelf">'+items.map(bookCard).join('')+'</div>' : '<div class="panel empty">'+emptyText+'</div>');
+      };
+
+      fill(document.getElementById('currentlySection'), '📖 Currently Reading', 'Books you have started and are actively reading. 💕', current, 'Nothing currently reading. Time to pick a new victim. 😂📚');
+      fill(unreadSection, '🌿 Unread', 'Books you own or have saved but have not started yet.', unread, 'No unread books yet. Your TBR pile is behaving itself. 😂📚');
+      fill(document.getElementById('archivedSection'), '📚 Already Read', 'Finished books live here. Your completed reading shelf. ✨', read, 'No already-read books yet.');
+      fill(document.getElementById('dnfSection'), '🚫 DNF — Did Not Finish', 'Books you decided not to finish live here. No judgment. 💕', dnf, 'No DNF books yet.');
+
+      const panel = document.getElementById('bookshelfPanel');
+      if (panel) {
+        panel.appendChild(document.getElementById('currentlySection'));
+        panel.appendChild(unreadSection);
+        panel.appendChild(document.getElementById('archivedSection'));
+        panel.appendChild(document.getElementById('dnfSection'));
+      }
+    }
+
+    window.render = renderFourSections;
+    window.renderFourSections = renderFourSections;
+    renderFourSections();
   }
-  function renderUnread(){
-    const el = section();
-    if(!el || typeof bookCard !== 'function') return;
-    const books = (typeof state !== 'undefined' && Array.isArray(state.books)) ? state.books : [];
-    const q = (document.getElementById('bookSearch')?.value || '').toLowerCase();
-    const sf = String(document.getElementById('statusFilter')?.value || '').trim().toLowerCase();
-    const rf = Number(document.getElementById('ratingFilter')?.value || 0);
-    const filtered = books.filter(b => {
-      const searchable = JSON.stringify(b).toLowerCase();
-      return (!q || searchable.includes(q)) && (!sf || norm(b) === sf) && (!rf || Number(b.rating) >= rf);
-    });
-    el.innerHTML = '<div class="section-title">📚 Unread</div><div class="section-sub">Books you haven’t started yet. 🌿</div>' + cardList(filtered.filter(isUnread));
-  }
-  function patchRender(){
-    if(typeof window.render !== 'function' || window.render.__unreadPatched) return;
-    const original = window.render;
-    function wrappedRender(){ original(); renderUnread(); }
-    wrappedRender.__unreadPatched = true;
-    window.render = wrappedRender;
-    wrappedRender();
-  }
-  function addSection(){
-    const parent = document.getElementById('bookshelfPanel');
-    if(!parent || section()) return;
-    const el = document.createElement('div');
-    el.id = 'unreadSection';
-    el.className = 'section';
-    parent.appendChild(el);
-  }
-  function installStyles(){
-    if(document.getElementById('unread-section-styles')) return;
-    const style=document.createElement('style'); style.id='unread-section-styles';
-    style.textContent=`
-      #unreadSection{order:4}
-      #dnfSection{order:5}
-      #archivedSection{order:6}
-      #unreadSection .section-title{color:#315f40}
-      #unreadSection .section-sub{color:#657a60}
-      #unreadSection .panel{background:rgba(255,248,232,.88);border-color:#d0bf86}
-      #unreadSection .chip{background:#e3edca;color:#42633d}
-    `;
-    document.head.appendChild(style);
-  }
-  function start(){ addSection(); installStyles(); patchRender(); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
+  else install();
 })();
