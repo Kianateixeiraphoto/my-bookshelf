@@ -34,7 +34,8 @@
   function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js';script.defer=true;document.head.appendChild(script);}
   function loadSpiceFix(){if(document.getElementById('spice-rating-fix'))return;const script=document.createElement('script');script.id='spice-rating-fix';script.src='spice-rating-fix.js?v=20260818';script.defer=true;document.head.appendChild(script);}
   function loadUnreadSection(){if(document.getElementById('unread-section-script'))return;const script=document.createElement('script');script.id='unread-section-script';script.src='unread-section.js?v=20260818';script.defer=true;document.head.appendChild(script);}
+  function loadUnreadStatusFix(){if(document.getElementById('unread-status-fix-script'))return;const script=document.createElement('script');script.id='unread-status-fix-script';script.src='unread-status-fix.js?v=20260818';script.defer=true;document.head.appendChild(script);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
-  function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();loadUnreadSection();}
+  function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();loadUnreadSection();loadUnreadStatusFix();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
