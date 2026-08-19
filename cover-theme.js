@@ -8,7 +8,9 @@
   function sampleImage(img,cb){const work=document.createElement('canvas');work.width=32;work.height=32;const ctx=work.getContext('2d',{willReadFrequently:true});if(!ctx)return cb(FALLBACK);try{ctx.drawImage(img,0,0,32,32);const data=ctx.getImageData(0,0,32,32).data;let r=0,g=0,b=0,count=0;for(let i=0;i<data.length;i+=4){if(data[i+3]<150)continue;const rr=data[i],gg=data[i+1],bb=data[i+2];if(rr>245&&gg>245&&bb>245)continue;r+=rr;g+=gg;b+=bb;count++;}cb(count?{r:r/count,g:g/count,b:b/count}:FALLBACK);}catch(_){cb(FALLBACK);}}
   function themeCard(card){if(!card||card.dataset.coverThemePending==='1')return;const img=card.querySelector('.cover img');if(!img)return;card.dataset.coverThemePending='1';const finish=()=>{const sampler=new Image();sampler.crossOrigin='anonymous';sampler.onload=()=>sampleImage(sampler,rgb=>setTheme(card,rgb));sampler.onerror=()=>setTheme(card,FALLBACK);sampler.src=img.currentSrc||img.src;};if(img.complete&&img.naturalWidth)finish();else img.addEventListener('load',finish,{once:true});}
   function installStyles(){if(document.getElementById(STYLE_ID))return;const style=document.createElement('style');style.id=STYLE_ID;style.textContent=`
-    .book{display:flex;flex-direction:column;height:460px;min-height:460px;max-height:460px;border-radius:20px;overflow:hidden;background:rgba(255,253,253,.94);box-shadow:var(--shadow)}
+    /* All bookshelf sections use the same four-column card footprint. Empty columns remain empty rather than stretching cards. */
+    .shelf{grid-template-columns:repeat(4,minmax(0,1fr));justify-content:start;align-items:start}
+    .book{display:flex;flex-direction:column;width:100%;height:460px;min-height:460px;max-height:460px;border-radius:20px;overflow:hidden;background:rgba(255,253,253,.94);box-shadow:var(--shadow)}
     .book[data-cover-theme-ready="1"]{background:linear-gradient(135deg,hsl(var(--cover-h),var(--cover-s),var(--cover-l)),hsl(var(--cover-h),calc(var(--cover-s)*.76),calc(var(--cover-l) + 7%)) 72%);border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));box-shadow:0 10px 30px hsla(var(--cover-h),58%,42%,.24)}
     .book[data-cover-theme-ready="1"] .book-body{background:linear-gradient(90deg,hsla(var(--cover-h),var(--cover-s),var(--cover-l),.24),hsla(var(--cover-h),calc(var(--cover-s)*.82),calc(var(--cover-l) + 4%),.10) 70%,transparent);color:#000}
     .book[data-cover-theme-ready="1"] .book-title,.book[data-cover-theme-ready="1"] .author,.book[data-cover-theme-ready="1"] .meta{color:#000}
@@ -25,7 +27,8 @@
     .book .meta{font-size:11px;line-height:1.6;min-height:35px;max-height:35px;overflow:hidden}
     .book .book-actions{display:flex;gap:7px;margin-top:auto;flex-wrap:nowrap}
     .book .book-actions .btn{padding:7px 10px;font-size:11px;white-space:nowrap}
-    @media(max-width:900px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.book{height:460px;min-height:460px;max-height:460px}}
+    @media(max-width:1100px){.shelf{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
+    @media(max-width:800px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.book{height:460px;min-height:460px;max-height:460px}}
     @media(max-width:600px){.book{height:370px;min-height:370px;max-height:370px}.book .cover{height:240px;min-height:240px;max-height:240px;flex-basis:240px}.book .book-body{height:130px;min-height:130px;max-height:130px;padding:11px}.book .book-title{font-size:16px;min-height:38px;max-height:38px}.book .author{font-size:12px}.book .chips{margin:6px 0}.book .meta{font-size:10px}.book .book-actions .btn{padding:6px 8px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}
   `;document.head.appendChild(style);}
   function loadFloralVines(){if(document.getElementById('floral-vines-styles'))return;const link=document.createElement('link');link.id='floral-vines-styles';link.rel='stylesheet';link.href='floral-vines.css?v=forest-photo-20260818';document.head.appendChild(link);}
