@@ -5,15 +5,16 @@
 
   const originalCloudLoad = window.cloudLoad;
   const key = b => ((b?.title || b?.name || '') + '|' + (b?.author || '')).trim().toLowerCase();
+  const SUPABASE_URL = 'https://ctnsusnfzclqnaloimzu.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_awbAAru2iWbHsjabVF83Gw_FhpiSG0z';
 
   // Always use Supabase's persisted auth session as the source of truth.
-  // The app's window.session can briefly be null/stale while the page is
-  // restoring auth, especially immediately after an edit/save.
+  // window.session can briefly be null/stale while auth is restoring, especially after an edit/save.
   let authClient = null;
   function getAuthClient() {
     if (authClient) return authClient;
-    if (window.supabase?.createClient && window.SUPABASE_URL && window.SUPABASE_KEY) {
-      authClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, {
+    if (window.supabase?.createClient) {
+      authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: { persistSession: true, autoRefreshToken: true, storage: window.localStorage, storageKey: 'my-bookshelf-supabase-auth' }
       });
     }
@@ -21,11 +22,9 @@
   }
 
   async function ensureSession() {
-    // Reuse a current, unexpired app session when possible.
     if (window.session?.user?.id && (!window.session.expires_at || window.session.expires_at * 1000 > Date.now() + 30000)) {
       return window.session;
     }
-
     try {
       const client = getAuthClient();
       if (client) {
@@ -40,7 +39,6 @@
     } catch (e) {
       console.warn('Could not restore persisted Supabase session', e);
     }
-
     return null;
   }
 
@@ -59,21 +57,13 @@
     const merged = new Map();
     cloudBooks.forEach(b => merged.set(key(b), b));
     localBooks.forEach(b => merged.set(key(b), { ...(merged.get(key(b)) || {}), ...b }));
-
     const mergeArray = name => {
       const a = Array.isArray(local?.[name]) ? local[name] : [];
       const b = Array.isArray(cloud?.[name]) ? cloud[name] : [];
       if (name === 'books') return Array.from(merged.values());
       return [...b, ...a.filter(x => JSON.stringify(b).indexOf(JSON.stringify(x)) === -1)];
     };
-
-    return {
-      ...(cloud || {}),
-      ...(local || {}),
-      books: mergeArray('books'),
-      fanfiction: mergeArray('fanfiction'),
-      booksToBuy: mergeArray('booksToBuy')
-    };
+    return {...(cloud || {}), ...(local || {}), books: mergeArray('books'), fanfiction: mergeArray('fanfiction'), booksToBuy: mergeArray('booksToBuy')};
   }
 
   async function safeCloudLoad() {
@@ -81,15 +71,11 @@
     if (!s) return;
     try {
       const row = await getCloud(s);
-      if (!row?.data) {
-        if (typeof window.render === 'function') window.render();
-        return;
-      }
+      if (!row?.data) { if (typeof window.render === 'function') window.render(); return; }
       const merged = mergeState(window.state || {}, row.data || {});
       window.state = merged;
       if (typeof window.saveLocal === 'function') window.saveLocal();
       if (typeof window.render === 'function') window.render();
-
       const cloudBookCount = Array.isArray(row.data?.books) ? row.data.books.length : 0;
       const mergedBookCount = Array.isArray(merged.books) ? merged.books.length : 0;
       const needsUpload = mergedBookCount > cloudBookCount ||
@@ -106,40 +92,24 @@
 
   async function safeSync() {
     const s = await ensureSession();
-    if (!s) {
-      if (typeof window.openAuth === 'function') window.openAuth('login');
-      return;
-    }
-
+    if (!s) { if (typeof window.openAuth === 'function') window.openAuth('login'); return; }
     try {
       const cloudRow = await getCloud(s);
       const merged = mergeState(window.state || {}, cloudRow?.data || {});
-      const uid = s.user.id;
-      const newId = 'library:' + uid;
-      const now = new Date().toISOString();
-      const payload = { ...merged };
+      const uid = s.user.id, newId = 'library:' + uid, now = new Date().toISOString(), payload = {...merged};
       let rows = await window.api('/rest/v1/books?select=id&user_id=eq.' + encodeURIComponent(uid) + '&id=eq.' + encodeURIComponent(newId));
       if (rows?.length) {
-        await window.api('/rest/v1/books?id=eq.' + encodeURIComponent(newId) + '&user_id=eq.' + encodeURIComponent(uid), { method:'PATCH', headers:{Prefer:'return=minimal'}, body:JSON.stringify({data:payload,updated_at:now}) });
+        await window.api('/rest/v1/books?id=eq.' + encodeURIComponent(newId) + '&user_id=eq.' + encodeURIComponent(uid), {method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({data:payload,updated_at:now})});
       } else {
         rows = await window.api('/rest/v1/books?select=id&user_id=eq.' + encodeURIComponent(uid) + '&id=eq.library');
-        if (rows?.length) {
-          await window.api('/rest/v1/books?id=eq.library&user_id=eq.' + encodeURIComponent(uid), { method:'PATCH', headers:{Prefer:'return=minimal'}, body:JSON.stringify({data:payload,updated_at:now}) });
-        } else {
-          await window.api('/rest/v1/books', { method:'POST', headers:{Prefer:'return=minimal'}, body:JSON.stringify({id:newId,user_id:uid,data:payload,updated_at:now}) });
-        }
+        if (rows?.length) await window.api('/rest/v1/books?id=eq.library&user_id=eq.' + encodeURIComponent(uid), {method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({data:payload,updated_at:now})});
+        else await window.api('/rest/v1/books', {method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:newId,user_id:uid,data:payload,updated_at:now})});
       }
-
       const verify = await getCloud(s);
       const savedBooks = Array.isArray(verify?.data?.books) ? verify.data.books : [];
       const savedFics = Array.isArray(verify?.data?.fanfiction) ? verify.data.fanfiction : [];
       const savedBuy = Array.isArray(verify?.data?.booksToBuy) ? verify.data.booksToBuy : [];
-      if (savedBooks.length < (Array.isArray(payload.books) ? payload.books.length : 0) ||
-          savedFics.length < (Array.isArray(payload.fanfiction) ? payload.fanfiction.length : 0) ||
-          savedBuy.length < (Array.isArray(payload.booksToBuy) ? payload.booksToBuy.length : 0)) {
-        throw new Error('Cloud verification found fewer records than expected. Local data was not replaced.');
-      }
-
+      if (savedBooks.length < (Array.isArray(payload.books) ? payload.books.length : 0) || savedFics.length < (Array.isArray(payload.fanfiction) ? payload.fanfiction.length : 0) || savedBuy.length < (Array.isArray(payload.booksToBuy) ? payload.booksToBuy.length : 0)) throw new Error('Cloud verification found fewer records than expected. Local data was not replaced.');
       window.state = merged;
       if (typeof window.saveLocal === 'function') window.saveLocal();
       if (typeof window.render === 'function') window.render();
