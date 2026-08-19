@@ -9,24 +9,21 @@
   }
   function renderUnread(){
     const el = section();
-    if(!el || typeof bookCard !== 'function' || !window.state) return;
+    if(!el || typeof bookCard !== 'function') return;
+    const books = (typeof state !== 'undefined' && Array.isArray(state.books)) ? state.books : [];
     const q = (document.getElementById('bookSearch')?.value || '').toLowerCase();
     const sf = String(document.getElementById('statusFilter')?.value || '').trim().toLowerCase();
     const rf = Number(document.getElementById('ratingFilter')?.value || 0);
-    const books = (state.books || []).filter(b => {
+    const filtered = books.filter(b => {
       const searchable = JSON.stringify(b).toLowerCase();
       return (!q || searchable.includes(q)) && (!sf || norm(b) === sf) && (!rf || Number(b.rating) >= rf);
     });
-    const unread = books.filter(isUnread);
-    el.innerHTML = '<div class="section-title">📚 Unread</div><div class="section-sub">Books you own or have saved but haven’t started yet. 🌿</div>' + cardList(unread);
+    el.innerHTML = '<div class="section-title">📚 Unread</div><div class="section-sub">Books you haven’t started yet. 🌿</div>' + cardList(filtered.filter(isUnread));
   }
   function patchRender(){
     if(typeof window.render !== 'function' || window.render.__unreadPatched) return;
     const original = window.render;
-    function wrappedRender(){
-      original();
-      renderUnread();
-    }
+    function wrappedRender(){ original(); renderUnread(); }
     wrappedRender.__unreadPatched = true;
     window.render = wrappedRender;
     wrappedRender();
@@ -38,12 +35,6 @@
     el.id = 'unreadSection';
     el.className = 'section';
     parent.appendChild(el);
-  }
-  function addStatusOption(){
-    const input = document.querySelector('#bookForm select[name="status"]');
-    if(input && ![...input.options].some(o => o.value === 'Unread')){
-      const opt = document.createElement('option'); opt.value='Unread'; opt.textContent='Unread'; input.appendChild(opt);
-    }
   }
   function installStyles(){
     if(document.getElementById('unread-section-styles')) return;
@@ -59,13 +50,6 @@
     `;
     document.head.appendChild(style);
   }
-  function start(){
-    addSection();
-    installStyles();
-    patchRender();
-    const observer=new MutationObserver(addStatusOption);
-    const modal=document.getElementById('modal');
-    if(modal) observer.observe(modal,{childList:true,subtree:true});
-  }
+  function start(){ addSection(); installStyles(); patchRender(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
 })();
