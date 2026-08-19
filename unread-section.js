@@ -1,17 +1,19 @@
-/* Bookshelf status organization: Currently Reading / Unread / Already Read / DNF */
+/* Bookshelf — stable four-section renderer */
 (() => {
+  const READ_STATUSES = new Set(['read','finished','complete','completed','archived']);
+  const CURRENT_STATUSES = new Set(['currently reading']);
+  const DNF_STATUSES = new Set(['dnf']);
+  const UNREAD_STATUSES = new Set(['unread','want to read','tbr']);
+
   function install() {
     if (window.__fourShelfSectionsInstalled || typeof window.render !== 'function') return;
     window.__fourShelfSectionsInstalled = true;
 
     const originalRender = window.render;
-    const READ_STATUSES = new Set(['read','finished','complete','completed','archived']);
-    const CURRENT_STATUSES = new Set(['currently reading']);
-    const DNF_STATUSES = new Set(['dnf']);
 
     function renderFourSections() {
       originalRender();
-      const books = state.books || [];
+      const books = Array.isArray(state.books) ? state.books : [];
       const norm = b => String(b.status || '').trim().toLowerCase();
       const q = ($('bookSearch')?.value || '').toLowerCase();
       const sf = String($('statusFilter')?.value || '').trim().toLowerCase();
@@ -46,11 +48,8 @@
       fill(document.getElementById('dnfSection'), '🚫 DNF — Did Not Finish', 'Books you decided not to finish live here. No judgment. 💕', dnf, 'No DNF books yet.');
 
       const panel = document.getElementById('bookshelfPanel');
-      if (panel) {
-        panel.appendChild(document.getElementById('currentlySection'));
+      if (panel && unreadSection.parentNode !== panel) {
         panel.appendChild(unreadSection);
-        panel.appendChild(document.getElementById('archivedSection'));
-        panel.appendChild(document.getElementById('dnfSection'));
       }
     }
 
