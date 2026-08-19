@@ -19,16 +19,16 @@
     .book[data-cover-theme-ready="1"] .heart{border-color:hsl(var(--cover-h),calc(var(--cover-s)*.72),calc(var(--cover-l) - 15%));color:#000;background:hsla(var(--cover-h),60%,96%,.78)}
     .book .cover{height:310px;min-height:310px;max-height:310px;flex:0 0 310px}
     .book .cover img{width:100%;height:100%;min-height:0;object-fit:cover}
-    .book .book-body{height:150px;min-height:150px;max-height:150px;box-sizing:border-box;padding:15px;min-width:0;overflow:hidden;display:flex;flex-direction:column}
-    .book .book-title{font-size:19px;line-height:1.2;min-height:46px;max-height:46px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-    .book .author{font-size:13px;margin-top:4px;min-height:16px;max-height:16px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-    .book .chips{margin:9px 0;min-height:22px;max-height:22px;overflow:hidden;white-space:nowrap}
-    .book .meta{font-size:11px;line-height:1.6;min-height:35px;max-height:35px;overflow:hidden}
-    .book .book-actions{display:flex;gap:7px;margin-top:auto;flex-wrap:nowrap}
-    .book .book-actions .btn{padding:7px 10px;font-size:11px;white-space:nowrap}
+    .book .book-body{height:150px;min-height:150px;max-height:150px;box-sizing:border-box;padding:10px 15px 9px;min-width:0;overflow:hidden;display:flex;flex-direction:column}
+    .book .book-title{font-size:19px;line-height:1.15;min-height:40px;max-height:40px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+    .book .author{font-size:13px;margin-top:2px;min-height:16px;max-height:16px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .book .chips{margin:5px 0;min-height:20px;max-height:20px;overflow:hidden;white-space:nowrap}
+    .book .meta{font-size:11px;line-height:1.35;min-height:28px;max-height:28px;overflow:hidden}
+    .book .book-actions{display:flex;gap:7px;margin-top:auto;flex-wrap:nowrap;height:28px;min-height:28px}
+    .book .book-actions .btn{padding:5px 10px;font-size:11px;line-height:16px;white-space:nowrap;height:28px}
     @media(max-width:1100px){.shelf{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
     @media(max-width:800px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.book{height:460px;min-height:460px;max-height:460px}}
-    @media(max-width:600px){.book{height:370px;min-height:370px;max-height:370px}.book .cover{height:240px;min-height:240px;max-height:240px;flex-basis:240px}.book .book-body{height:130px;min-height:130px;max-height:130px;padding:11px}.book .book-title{font-size:16px;min-height:38px;max-height:38px}.book .author{font-size:12px}.book .chips{margin:6px 0}.book .meta{font-size:10px}.book .book-actions .btn{padding:6px 8px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}
+    @media(max-width:600px){.book{height:370px;min-height:370px;max-height:370px}.book .cover{height:240px;min-height:240px;max-height:240px;flex-basis:240px}.book .book-body{height:130px;min-height:130px;max-height:130px;padding:8px 11px 7px}.book .book-title{font-size:16px;line-height:1.15;min-height:36px;max-height:36px}.book .author{font-size:12px;margin-top:1px}.book .chips{margin:4px 0;min-height:18px;max-height:18px}.book .meta{font-size:10px;line-height:1.25;min-height:25px;max-height:25px}.book .book-actions{gap:6px;height:25px;min-height:25px}.book .book-actions .btn{padding:4px 8px;font-size:10px;height:25px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}
   `;document.head.appendChild(style);}
   function loadFloralVines(){if(document.getElementById('floral-vines-styles'))return;const link=document.createElement('link');link.id='floral-vines-styles';link.rel='stylesheet';link.href='floral-vines.css?v=forest-photo-20260818';document.head.appendChild(link);}
   function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js';script.defer=true;document.head.appendChild(script);}
