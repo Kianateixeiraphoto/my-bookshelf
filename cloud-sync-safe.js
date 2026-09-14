@@ -1,1 +1,1 @@
-alert('test')
+globalThis.__cloudSyncSafeV3Installed=true;
