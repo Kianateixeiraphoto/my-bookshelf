@@ -24,8 +24,7 @@
       const d = finishedDate(book);
       if (d && clean(book.status) === 'read') years.add(d.getFullYear());
     });
-    const current = new Date().getFullYear();
-    years.add(current);
+    years.add(new Date().getFullYear());
     return [...years].sort((a,b) => b-a);
   }
 
@@ -135,31 +134,23 @@
 
     panel.innerHTML = `
       <div class="stats-v2-head">
-        <div>
-          <div class="stats-kicker">✨ YOUR READING YEAR</div>
-          <h2>My ${year} Reading Year</h2>
-          <p>A little look at everything you read, loved, and survived. 📚💕</p>
-        </div>
+        <div><div class="stats-kicker">✨ YOUR READING YEAR</div><h2>My ${year} Reading Year</h2><p>A little look at everything you read, loved, and survived. 📚💕</p></div>
         <label class="stats-year-select">Year <select id="statsYearSelect">${years.map(y => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
       </div>
-
       <div class="stats-hero-grid">
         <div class="stats-big-card"><span>📚</span><b>${yearRead.length}</b><small>Books Read</small></div>
         <div class="stats-big-card"><span>📖</span><b>${pages.toLocaleString()}</b><small>Pages Read</small></div>
         <div class="stats-big-card"><span>⭐</span><b>${avg}</b><small>Average Rating</small></div>
         <div class="stats-big-card"><span>💖</span><b>${fiveStars.length}</b><small>5-Star Reads</small></div>
       </div>
-
       <div class="stats-feature-grid">
         <section class="panel stats-feature"><h3>📅 My Reading Year</h3><p class="stats-section-copy">Books finished each month</p>${miniBars(months)}<div class="stats-highlight">${bestMonthCount ? `<b>${bestMonth}</b> was your biggest reading month with <b>${bestMonthCount}</b> book${bestMonthCount === 1 ? '' : 's'}.` : 'Start finishing books to see your year take shape. ✨'}</div></section>
         <section class="panel stats-feature"><h3>📌 Where I’m At</h3><p class="stats-section-copy">Your bookshelf right now</p><div class="stats-status-stack"><div><span>📖 Currently Reading</span><b>${currentlyReading.length}</b></div><div><span>🛒 On My TBR</span><b>${tbr.length}</b></div><div><span>💗 Favorites</span><b>${allFavorites.length}</b></div></div></section>
       </div>
-
       <div class="stats-feature-grid">
         <section class="panel stats-feature"><h3>💕 My Favorite Reads</h3><p class="stats-section-copy">Your five-star books from ${year}</p>${bookStrip(fiveStars)}</section>
         <section class="panel stats-feature"><h3>✍️ Authors I Read Most</h3><p class="stats-section-copy">Most books finished by one author</p>${listRows(authors, authors[0]?.[1] || 1)}</section>
       </div>
-
       <div class="stats-feature-grid">
         <section class="panel stats-feature"><h3>🏷️ My Reading Vibe</h3><p class="stats-section-copy">Your most-used tags this year</p>${listRows(tags, tags[0]?.[1] || 1)}</section>
         <section class="panel stats-feature"><h3>✨ Little Things</h3><p class="stats-section-copy">Because numbers should be fun</p><div class="stats-fun-grid">
@@ -169,14 +160,8 @@
           <div><span>⭐ 5-Star Rate</span><b>${yearRead.length ? Math.round(fiveStars.length / yearRead.length * 100) : 0}%</b><small>of books read</small></div>
         </div></section>
       </div>
-
-      <section class="stats-personality">
-        <div class="stats-personality-kicker">🎀 A LITTLE READING CHECK-IN</div>
-        <h3>${yearRead.length ? 'Your reading life is looking pretty bookish.' : 'Your reading year is waiting for its first chapter.'}</h3>
-        <p>${yearRead.length ? `You finished <b>${yearRead.length}</b> book${yearRead.length === 1 ? '' : 's'} in ${year}${pages ? ` and turned ${pages.toLocaleString()} pages` : ''} — with an average rating of <b>${avg}</b>. ${fiveStars.length ? `You had <b>${fiveStars.length}</b> five-star read${fiveStars.length === 1 ? '' : 's'}, too. 💕` : 'Your five-star shelf is still waiting for its moment. ✨'}` : 'Once you start marking books as finished, this little yearbook will start filling itself in. ✨'}</p>
-      </section>
+      <section class="stats-personality"><div class="stats-personality-kicker">🎀 A LITTLE READING CHECK-IN</div><h3>${yearRead.length ? 'Your reading life is looking pretty bookish.' : 'Your reading year is waiting for its first chapter.'}</h3><p>${yearRead.length ? `You finished <b>${yearRead.length}</b> book${yearRead.length === 1 ? '' : 's'} in ${year}${pages ? ` and turned ${pages.toLocaleString()} pages` : ''} — with an average rating of <b>${avg}</b>. ${fiveStars.length ? `You had <b>${fiveStars.length}</b> five-star read${fiveStars.length === 1 ? '' : 's'}, too. 💕` : 'Your five-star shelf is still waiting for its moment. ✨'}` : 'Once you start marking books as finished, this little yearbook will start filling itself in. ✨'}</p></section>
     `;
-
     const select = document.getElementById('statsYearSelect');
     if (select) select.addEventListener('change', () => { panel.dataset.statsYear = select.value; renderStatsV2(); });
   }
@@ -187,24 +172,19 @@
     style.id = 'reading-stats-v2-styles';
     style.textContent = `
       #statsPanel{padding:20px}
-      .stats-v2-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:18px}
-      .stats-kicker{font-size:11px;letter-spacing:2px;color:#c05a7b;font-weight:700;margin-bottom:5px}
-      .stats-v2-head h2{font-family:Georgia,serif;color:#9e4d68;font-size:30px;margin:0 0 5px}
-      .stats-v2-head p{margin:0;color:#8a717b;font-size:13px}
-      .stats-year-select{font-size:11px;color:#8a717b;display:flex;align-items:center;gap:7px}.stats-year-select select{padding:8px 12px;border-radius:999px}
-      .stats-hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}
-      .stats-big-card{background:linear-gradient(145deg,rgba(255,247,250,.95),rgba(255,253,252,.98));border:1px solid #efd5dd;border-radius:18px;padding:15px;min-height:112px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 8px 22px rgba(180,93,122,.08)}
-      .stats-big-card span{font-size:18px}.stats-big-card b{font-family:Georgia,serif;color:#a64d6b;font-size:27px;margin:3px 0}.stats-big-card small{font-size:11px;color:#8a717b}
-      .stats-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}.stats-feature{min-width:0}.stats-feature h3{font-family:Georgia,serif;color:#684352;margin:0 0 3px;font-size:19px}.stats-section-copy{color:#8a717b;font-size:11px;margin:0 0 12px}
-      .stats-month-bars{height:145px;display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;padding-top:15px}.stats-month-col{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;position:relative}.stats-month-col b{font-size:9px;color:#a64d6b;min-height:10px}.stats-month-col span{font-size:9px;color:#927782}.stats-bar{width:72%;min-height:3px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#e88ba7,#d96f91)}
-      .stats-highlight{margin-top:12px;padding:9px 11px;border-radius:12px;background:#fff0f4;color:#8a596c;font-size:11px;line-height:1.5}.stats-highlight b{color:#a64d6b}
-      .stats-status-stack{display:grid;gap:8px}.stats-status-stack>div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff8fa;border:1px solid #f0dce2;border-radius:12px;font-size:12px;color:#765967}.stats-status-stack b{color:#a64d6b;font-size:18px}
-      .stats-book-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 8px}.stats-mini-book{flex:0 0 86px}.stats-book-cover{width:86px;height:120px;object-fit:cover;border-radius:9px;background:#fde3eb;display:block;box-shadow:0 6px 14px rgba(180,93,122,.10)}.stats-cover-placeholder{display:flex;align-items:center;justify-content:center;font-size:25px}.stats-mini-title{font-size:10px;color:#684352;font-weight:600;line-height:1.25;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.stats-mini-rating{font-size:9px;color:#d26b8c;margin-top:3px;white-space:nowrap}.stats-mini-rating span{color:#927782}
+      .stats-v2-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:18px}.stats-kicker{font-size:11px;letter-spacing:2px;color:#c05a7b;font-weight:700;margin-bottom:5px}.stats-v2-head h2{font-family:Georgia,serif;color:#9e4d68;font-size:30px;margin:0 0 5px}.stats-v2-head p{margin:0;color:#8a717b;font-size:13px}.stats-year-select{font-size:11px;color:#8a717b;display:flex;align-items:center;gap:7px}.stats-year-select select{padding:8px 12px;border-radius:999px}
+      .stats-hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}.stats-big-card{background:linear-gradient(145deg,rgba(255,247,250,.95),rgba(255,253,252,.98));border:1px solid #efd5dd;border-radius:18px;padding:15px;min-height:112px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 8px 22px rgba(180,93,122,.08)}.stats-big-card span{font-size:18px}.stats-big-card b{font-family:Georgia,serif;color:#a64d6b;font-size:27px;margin:3px 0}.stats-big-card small{font-size:11px;color:#8a717b}
+      .stats-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}.stats-feature{min-width:0}.stats-feature h3{font-family:Georgia,serif;color:#5f3446;margin:0 0 3px;font-size:19px;text-shadow:0 1px 0 rgba(255,255,255,.85)}.stats-section-copy{color:#8a717b;font-size:11px;margin:0 0 12px}
+      .stats-month-bars{height:145px;display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;padding-top:15px}.stats-month-col{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;position:relative}.stats-month-col b{font-size:9px;color:#a64d6b;min-height:10px}.stats-month-col span{font-size:9px;color:#927782}.stats-bar{width:72%;min-height:3px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#e88ba7,#d96f91)}.stats-highlight{margin-top:12px;padding:9px 11px;border-radius:12px;background:#fff0f4;color:#8a596c;font-size:11px;line-height:1.5}.stats-highlight b{color:#a64d6b}
+      .stats-status-stack{display:grid;gap:8px}.stats-status-stack>div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff8fa;border:1px solid #f0dce2;border-radius:12px;font-size:12px;color:#765967}.stats-status-stack b{color:#a64d6b;font-size:18px}.stats-book-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 8px}.stats-mini-book{flex:0 0 86px}.stats-book-cover{width:86px;height:120px;object-fit:cover;border-radius:9px;background:#fde3eb;display:block;box-shadow:0 6px 14px rgba(180,93,122,.10)}.stats-cover-placeholder{display:flex;align-items:center;justify-content:center;font-size:25px}.stats-mini-title{font-size:10px;color:#684352;font-weight:600;line-height:1.25;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.stats-mini-rating{font-size:9px;color:#d26b8c;margin-top:3px;white-space:nowrap}.stats-mini-rating span{color:#927782}
       .stats-list-row{margin:9px 0}.stats-list-label{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#6f5360;margin-bottom:4px}.stats-list-label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stats-list-label b{color:#a64d6b}.stats-progress{height:6px;background:#f8e8ed;border-radius:99px;overflow:hidden}.stats-progress span{display:block;height:100%;border-radius:99px;background:#e88ba7}
       .stats-fun-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stats-fun-grid>div{padding:10px;background:#fff8fa;border:1px solid #f0dce2;border-radius:12px;min-width:0}.stats-fun-grid span,.stats-fun-grid small{display:block;color:#8a717b;font-size:10px}.stats-fun-grid b{display:block;color:#9e4d68;font-family:Georgia,serif;font-size:13px;margin:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .stats-personality{margin-top:2px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#fff0f4,#fff8fa 55%,#f9eff9);border:1px solid #efd1dc;text-align:center}.stats-personality-kicker{font-size:10px;letter-spacing:1.8px;color:#c05a7b;font-weight:700}.stats-personality h3{font-family:Georgia,serif;color:#9e4d68;font-size:22px;margin:7px 0}.stats-personality p{max-width:650px;margin:0 auto;color:#765967;font-size:12px;line-height:1.7}.stats-personality b{color:#a64d6b}.stats-empty{padding:20px 5px;color:#927782;font-size:11px;text-align:center}
+      /* Readability layer for section titles over floral/cover-themed backgrounds */
+      .stats-feature h3{display:inline-block;padding:7px 12px;border-radius:12px;background:rgba(255,250,252,.92);border:1px solid rgba(239,213,221,.95);box-shadow:0 4px 12px rgba(120,70,90,.08)}
+      .stats-v2-head h2{display:inline-block;padding:5px 12px;border-radius:12px;background:rgba(255,250,252,.88);box-shadow:0 4px 12px rgba(120,70,90,.06)}
       @media(max-width:800px){.stats-hero-grid{grid-template-columns:repeat(2,1fr)}.stats-feature-grid{grid-template-columns:1fr}}
-      @media(max-width:560px){#statsPanel{padding:15px}.stats-v2-head{align-items:flex-start;flex-direction:column}.stats-v2-head h2{font-size:25px}.stats-year-select{align-self:flex-start}.stats-hero-grid{grid-template-columns:1fr 1fr;gap:8px}.stats-big-card{min-height:98px}.stats-big-card b{font-size:23px}.stats-month-bars{gap:2px}.stats-month-col span{font-size:8px}.stats-bar{width:80%}}
+      @media(max-width:560px){#statsPanel{padding:15px}.stats-v2-head{align-items:flex-start;flex-direction:column}.stats-v2-head h2{font-size:25px}.stats-year-select{align-self:flex-start}.stats-hero-grid{grid-template-columns:1fr 1fr;gap:8px}.stats-big-card{min-height:98px}.stats-big-card b{font-size:23px}.stats-month-bars{gap:2px}.stats-month-col span{font-size:8px}.stats-bar{width:80%}.stats-feature h3{padding:6px 10px;font-size:17px}}
     `;
     document.head.appendChild(style);
   }
@@ -258,15 +238,12 @@
   };
   const start = () => {
     removeDuplicateInsights();
-    const root = document.getElementById('fanfictionPanel');
-    if (!root || root.dataset.ficCleanupInstalled) return;
-    root.dataset.ficCleanupInstalled = 'true';
-    new MutationObserver(() => removeDuplicateInsights()).observe(root, {childList:true,subtree:true});
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      removeDuplicateInsights();
+      if (tries > 40) clearInterval(timer);
+    }, 250);
   };
-  let tries = 0;
-  const timer = setInterval(() => {
-    tries += 1;
-    start();
-    if (document.getElementById('fanfictionPanel') || tries > 100) clearInterval(timer);
-  }, 100);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, {once:true}); else start();
 })();
