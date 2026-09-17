@@ -26,20 +26,27 @@
     .book .meta{font-size:11px;line-height:1.35;min-height:28px;max-height:28px;overflow:hidden}
     .book .book-actions{display:flex;gap:7px;margin-top:auto;flex-wrap:nowrap;height:28px;min-height:28px}
     .book .book-actions .btn{padding:5px 10px;font-size:11px;line-height:16px;white-space:nowrap;height:28px}
-    /* Soft forest-green readability layer behind bookshelf card text */
-    .book[data-cover-theme-ready="1"] .book-body{position:relative;isolation:isolate;background:transparent;z-index:0}
-    .book[data-cover-theme-ready="1"] .book-body::before{content:"";position:absolute;inset:7px;border-radius:14px;background:rgba(210,234,218,.94);border:1px solid rgba(117,163,133,.82);box-shadow:0 5px 16px rgba(38,87,57,.14);z-index:0;pointer-events:none}
-    .book[data-cover-theme-ready="1"] .book-title,.book[data-cover-theme-ready="1"] .author,.book[data-cover-theme-ready="1"] .chips,.book[data-cover-theme-ready="1"] .meta,.book[data-cover-theme-ready="1"] .book-actions{position:relative;z-index:1}
+
+    /* Always-visible sage readability panel for bookshelf cards */
+    .book .book-body{position:relative;z-index:0;background:transparent!important;isolation:isolate}
+    .book .book-body::before{content:"";position:absolute;inset:7px;border-radius:14px;background:rgba(210,234,218,.96);border:1px solid rgba(117,163,133,.88);box-shadow:0 5px 16px rgba(38,87,57,.16);z-index:0;pointer-events:none}
+    .book .book-body > *{position:relative;z-index:1}
+
+    /* Green readability backing for bookshelf section headings */
+    #bookshelf h2,#bookshelf h3,#bookshelf .section-title{display:inline-block;padding:7px 13px;border-radius:12px;background:rgba(210,234,218,.94);border:1px solid rgba(117,163,133,.82);box-shadow:0 4px 14px rgba(38,87,57,.12);color:#214d34!important;text-shadow:none}
+    #bookshelf h2,#bookshelf h3{margin-bottom:8px}
+    #bookshelf p{color:#355d45}
+
     @media(max-width:1100px){.shelf{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
     @media(max-width:800px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.book{height:460px;min-height:460px;max-height:460px}}
-    @media(max-width:600px){.book{height:370px;min-height:370px;max-height:370px}.book .cover{height:240px;min-height:240px;max-height:240px;flex-basis:240px}.book .book-body{height:130px;min-height:130px;max-height:130px;padding:8px 11px 7px}.book .book-body::before{inset:5px}.book .book-title{font-size:16px;line-height:1.15;min-height:0;max-height:36px;height:auto}.book .author{font-size:12px;margin-top:0}.book .chips{margin:4px 0;min-height:18px;max-height:18px}.book .meta{font-size:10px;line-height:1.25;min-height:25px;max-height:25px}.book .book-actions{gap:6px;height:25px;min-height:25px}.book .book-actions .btn{padding:4px 8px;font-size:10px;height:25px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}
+    @media(max-width:600px){.book{height:370px;min-height:370px;max-height:370px}.book .cover{height:240px;min-height:240px;max-height:240px;flex-basis:240px}.book .book-body{height:130px;min-height:130px;max-height:130px;padding:8px 11px 7px}.book .book-body::before{inset:5px}.book .book-title{font-size:16px;line-height:1.15;min-height:0;max-height:36px;height:auto}.book .author{font-size:12px;margin-top:0}.book .chips{margin:4px 0;min-height:18px;max-height:18px}.book .meta{font-size:10px;line-height:1.25;min-height:25px;max-height:25px}.book .book-actions{gap:6px;height:25px;min-height:25px}.book .book-actions .btn{padding:4px 8px;font-size:10px;height:25px}.shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}#bookshelf h2,#bookshelf h3,#bookshelf .section-title{padding:6px 10px;font-size:17px}}
   `;document.head.appendChild(style);}
   function loadFloralVines(){if(document.getElementById('floral-vines-styles'))return;const link=document.createElement('link');link.id='floral-vines-styles';link.rel='stylesheet';link.href='floral-vines.css?v=forest-photo-20260819-fix5';document.head.appendChild(link);}
   function loadBooksToBuy(){if(document.getElementById('books-to-buy-script'))return;const script=document.createElement('script');script.id='books-to-buy-script';script.src='books-to-buy.js?v=20260917-buydeletefix1';script.defer=true;document.head.appendChild(script);}
   function loadSpiceFix(){if(document.getElementById('spice-rating-fix'))return;const script=document.createElement('script');script.id='spice-rating-fix';script.src='spice-rating-fix.js?v=20260819-fix6';script.defer=true;document.head.appendChild(script);}
   function loadUnreadSection(){if(document.getElementById('unread-section-script'))return;const script=document.createElement('script');script.id='unread-section-script';script.src='unread-section.js?v=20260819-fix6';script.defer=true;document.head.appendChild(script);}
   function loadUnreadStatusFix(){if(document.getElementById('unread-status-fix-script'))return;const script=document.createElement('script');script.id='unread-status-fix-script';script.src='unread-status-fix.js?v=20260819-fix5';script.defer=true;document.head.appendChild(script);}
-  function loadBookshelfRepair(){if(document.getElementById('bookshelf-repair-script'))return;const script=document.createElement('script');script.id='bookshelf-repair-script';script.src='bookshelf-repair.js?v=20260819-fix1';script.defer=true;document.head.appendChild(script);}
+  function loadBookshelfRepair(){if(document.getElementById('bookshelf-repair-script'))return;const script=document.createElement('script');script.id='bookshelf-repair-script';script.src='bookshelf-repair.js?v=20260819-fix1';document.head.appendChild(script);}
   function loadCloudSyncSafe(){if(document.getElementById('cloud-sync-safe-script'))return;const script=document.createElement('script');script.id='cloud-sync-safe-script';script.src='cloud-sync-safe.js?v=20260917-syncfix7';script.defer=true;document.head.appendChild(script);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
   function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();loadUnreadSection();loadUnreadStatusFix();loadBookshelfRepair();loadCloudSyncSafe();}
