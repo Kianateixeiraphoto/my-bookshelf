@@ -1,16 +1,27 @@
-/* Books to Buy — fresh rebuild with cloud sync */
+/* Books to Buy — deletion-aware cloud sync */
 (() => {
   const KEY = 'my-bookshelf-books-to-buy-v1';
+  const DELETED_KEY = 'my-bookshelf-books-to-buy-deleted-v1';
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'buy-' + Date.now() + '-' + Math.random().toString(36).slice(2));
   let books = [];
+  let deletedIds = new Set();
   let cloudClient = null;
   let cloudSession = null;
   let cloudSyncing = false;
 
-  function load(){ try { books = JSON.parse(localStorage.getItem(KEY) || '[]'); if(!Array.isArray(books)) books=[]; } catch { books=[]; } }
-  function save(){ localStorage.setItem(KEY, JSON.stringify(books)); }
+  function load(){
+    try { books = JSON.parse(localStorage.getItem(KEY) || '[]'); if(!Array.isArray(books)) books=[]; } catch { books=[]; }
+    try { const x=JSON.parse(localStorage.getItem(DELETED_KEY)||'[]'); deletedIds=new Set(Array.isArray(x)?x.map(String):[]); } catch { deletedIds=new Set(); }
+    books=books.filter(b=>!deletedIds.has(String(b?.id||'')));
+  }
+  function save(){
+    localStorage.setItem(KEY, JSON.stringify(books));
+    localStorage.setItem(DELETED_KEY, JSON.stringify([...deletedIds]));
+  }
+  function markDeleted(id){ if(id) deletedIds.add(String(id)); }
+  function unmarkDeleted(id){ if(id) deletedIds.delete(String(id)); }
 
   function findSupabaseConfig(){
     const text=[...document.scripts].map(s=>s.textContent||'').join('\n');
@@ -22,8 +33,8 @@
   function buyKey(b){ return String(b.id||((b.title||'')+'|'+(b.author||''))).trim().toLowerCase(); }
   function mergeBooks(localBooks,cloudBooks){
     const merged=new Map();
-    (cloudBooks||[]).forEach(b=>merged.set(buyKey(b),b));
-    (localBooks||[]).forEach(b=>{ const k=buyKey(b); if(!merged.has(k)) merged.set(k,b); });
+    (cloudBooks||[]).forEach(b=>{ if(!deletedIds.has(String(b?.id||''))) merged.set(buyKey(b),b); });
+    (localBooks||[]).forEach(b=>{ if(!deletedIds.has(String(b?.id||''))){ const k=buyKey(b); if(!merged.has(k)) merged.set(k,b); }});
     return [...merged.values()];
   }
   function sameBooks(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
@@ -36,12 +47,14 @@
       let {data:row,error}=await cloudClient.from('books').select('id,data,updated_at').eq('user_id',uid).eq('id',newId).maybeSingle();
       if(error)throw error;
       if(!row){ const fallback=await cloudClient.from('books').select('id,data,updated_at').eq('user_id',uid).eq('id','library').maybeSingle(); if(fallback.error)throw fallback.error; row=fallback.data; }
+      const cloudDeleted=Array.isArray(row?.data?.booksToBuyDeleted)?row.data.booksToBuyDeleted.map(String):[];
+      cloudDeleted.forEach(id=>deletedIds.add(id));
       const cloudBooks=Array.isArray(row?.data?.booksToBuy)?row.data.booksToBuy:[];
       const merged=mergeBooks(books,cloudBooks);
-      const localHadExtra=merged.length>cloudBooks.length || !sameBooks(merged,cloudBooks);
+      const localHadExtra=merged.length>cloudBooks.filter(b=>!deletedIds.has(String(b?.id||''))).length || !sameBooks(merged,cloudBooks.filter(b=>!deletedIds.has(String(b?.id||''))));
       books=merged; save(); render();
       setCloudStatus('Synced from cloud 💕');
-      if(localHadExtra)await cloudSave();
+      if(localHadExtra || cloudDeleted.length) await cloudSave();
     }catch(e){ console.warn('Books to Buy cloud load failed',e); }
   }
 
@@ -55,7 +68,7 @@
       let rowId=newId, existingData={};
       if(!row){ const fallback=await cloudClient.from('books').select('id,data').eq('user_id',uid).eq('id','library').maybeSingle(); if(fallback.error)throw fallback.error; row=fallback.data; }
       if(row){ rowId=row.id; existingData=row.data&&typeof row.data==='object'?row.data:{}; }
-      const nextData={...existingData,booksToBuy:books};
+      const nextData={...existingData,booksToBuy:books,booksToBuyDeleted:[...deletedIds]};
       if(row){ const result=await cloudClient.from('books').update({data:nextData,updated_at:new Date().toISOString()}).eq('id',rowId).eq('user_id',uid); if(result.error)throw result.error; }
       else { const result=await cloudClient.from('books').insert({id:rowId,user_id:uid,data:nextData,updated_at:new Date().toISOString()}); if(result.error)throw result.error; }
       setCloudStatus('Books to Buy synced 💕');
@@ -108,7 +121,7 @@
     $('buyCancel').onclick=()=>modal.classList.remove('show');
     $('buyCover').oninput=()=>preview($('buyCover').value);
     $('buyLookup').onclick=lookup;
-    $('buyForm').onsubmit=e=>{e.preventDefault();const x=Object.fromEntries(new FormData(e.target).entries());const obj={...book,id:book.id||uid(),title:x.title.trim(),author:x.author.trim(),cover:x.cover.trim(),price:x.price.trim(),notes:x.notes.trim()};if(book.id)books=books.map(b=>b.id===book.id?obj:b);else books.unshift(obj);save();modal.classList.remove('show');render();cloudSave();};
+    $('buyForm').onsubmit=e=>{e.preventDefault();const x=Object.fromEntries(new FormData(e.target).entries());const obj={...book,id:book.id||uid(),title:x.title.trim(),author:x.author.trim(),cover:x.cover.trim(),price:x.price.trim(),notes:x.notes.trim()};unmarkDeleted(obj.id);if(book.id)books=books.map(b=>b.id===book.id?obj:b);else books.unshift(obj);save();modal.classList.remove('show');render();cloudSave();};
   }
   function preview(url){$('buyPreview').innerHTML=url?`<img src="${esc(url)}" alt="">`:'<span>📚</span>';}
 
@@ -143,13 +156,15 @@
       const nextBuyBooks=cloudBuyBooks.filter(x=>!sameBuyBook(x,b));
       const existingShelfBooks=Array.isArray(existingData.books)?existingData.books:[];
       const duplicate=existingShelfBooks.some(x=>shelfKey(x)===shelfKey(shelfBook));
-      const nextData={...existingData,books:duplicate?existingShelfBooks:[...existingShelfBooks,shelfBook],booksToBuy:nextBuyBooks};
+      markDeleted(b.id);
+      const cloudDeleted=Array.isArray(existingData.booksToBuyDeleted)?existingData.booksToBuyDeleted.map(String):[]; cloudDeleted.forEach(id=>deletedIds.add(id));
+      const nextData={...existingData,books:duplicate?existingShelfBooks:[...existingShelfBooks,shelfBook],booksToBuy:nextBuyBooks.filter(x=>!deletedIds.has(String(x?.id||''))),booksToBuyDeleted:[...deletedIds]};
       const now=new Date().toISOString();
       const result=row
         ?await cloudClient.from('books').update({data:nextData,updated_at:now}).eq('id',row.id).eq('user_id',userId)
         :await cloudClient.from('books').insert({id:newId,user_id:userId,data:nextData,updated_at:now});
       if(result.error)throw result.error;
-      return {ok:true,booksToBuy:nextBuyBooks,duplicate};
+      return {ok:true,booksToBuy:nextData.booksToBuy,duplicate};
     }catch(e){console.warn('Move to Bookshelf cloud save failed',e);return {ok:false};}
   }
 
@@ -172,7 +187,7 @@
     list.innerHTML=books.map(b=>`<article class="buy-item"><div class="buy-cover">${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)} cover">`:'<div class="buy-cover-placeholder">📚</div>'}</div><div class="buy-item-body"><div class="buy-item-title">${esc(b.title||'Untitled')}</div><div class="buy-item-author">${esc(b.author||'Unknown author')}</div>${b.price?`<div class="buy-price">💰 ${esc(b.price)}</div>`:''}${b.notes?`<div class="buy-notes">📝 ${esc(b.notes)}</div>`:''}<div class="buy-actions"><button class="btn primary" data-move="${esc(b.id)}">Move to Bookshelf</button><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn" data-delete="${esc(b.id)}">Delete</button></div></div></article>`).join('');
     list.querySelectorAll('[data-move]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.move);if(b)moveToBookshelf(b)});
     list.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.edit);if(b)openForm(b)});
-    list.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=()=>{const b=books.find(x=>x.id===btn.dataset.delete);if(b&&confirm('Remove “'+b.title+'” from Books to Buy?')){books=books.filter(x=>x.id!==b.id);save();render();cloudSave();}});
+    list.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=async()=>{const b=books.find(x=>x.id===btn.dataset.delete);if(b&&confirm('Remove “'+b.title+'” from Books to Buy?')){markDeleted(b.id);books=books.filter(x=>x.id!==b.id);save();render();await cloudSave();}});
   }
 
   function init(){
