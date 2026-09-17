@@ -102,13 +102,35 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    .stats-group-panel h3{font-family:Georgia,serif;color:#9e4d68;margin:0 0 12px}
+    /* READING-STATS-GREEN-BACKING-V1 — soft translucent green backing */
+    #statsPanel{
+      background:rgba(76,112,72,.18);
+      border-color:rgba(112,145,79,.46);
+      box-shadow:0 12px 30px rgba(12,45,29,.16);
+      backdrop-filter:blur(2px);
+    }
+    #statsPanel .reading-card,
+    #statsPanel>.panel{
+      background:rgba(246,249,231,.78);
+      border-color:rgba(112,145,79,.38);
+      box-shadow:0 7px 20px rgba(18,55,34,.10);
+    }
+    #statsPanel .reading-card b{color:#365e3d}
+    #statsPanel .reading-card span{color:#62745b}
+    #statsPanel>.panel h3{color:#31583a}
+    .stats-group-panel h3{font-family:Georgia,serif;color:#31583a;margin:0 0 12px}
     .stats-pie-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
     .stats-pie{width:190px;height:190px;border-radius:50%;flex:0 0 190px}
     .stats-legend{min-width:220px;max-height:230px;overflow:auto;padding-right:8px}
-    .stats-legend-row{margin:6px 0;font-size:13px;color:#3f3037}
+    .stats-legend-row{margin:6px 0;font-size:13px;color:#304838}
     .stats-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px}
-    @media(max-width:600px){.stats-pie-wrap{display:block}.stats-pie{margin:0 auto 16px}.stats-legend{max-height:none}}
+    @media(max-width:600px){
+      .stats-pie-wrap{display:block}
+      .stats-pie{margin:0 auto 16px}
+      .stats-legend{max-height:none}
+      #statsPanel{padding:15px}
+      #statsPanel .reading-card,#statsPanel>.panel{background:rgba(246,249,231,.84)}
+    }
   `;
   document.head.appendChild(style);
 
