@@ -102,34 +102,47 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    /* READING-STATS-GREEN-BACKING-V1 — soft translucent green backing */
+    /* READING-STATS-PINK-V2 — keep Reading Stats pink while Bookshelf stays green */
     #statsPanel{
-      background:rgba(76,112,72,.18);
-      border-color:rgba(112,145,79,.46);
-      box-shadow:0 12px 30px rgba(12,45,29,.16);
-      backdrop-filter:blur(2px);
+      background:rgba(255,248,250,.90);
+      border-color:#efd3dc;
+      box-shadow:0 10px 28px rgba(180,93,122,.10);
     }
     #statsPanel .reading-card,
     #statsPanel>.panel{
-      background:rgba(246,249,231,.78);
-      border-color:rgba(112,145,79,.38);
-      box-shadow:0 7px 20px rgba(18,55,34,.10);
+      background:rgba(255,253,252,.93);
+      border-color:#efd5dd;
+      box-shadow:0 8px 22px rgba(180,93,122,.09);
     }
-    #statsPanel .reading-card b{color:#365e3d}
-    #statsPanel .reading-card span{color:#62745b}
-    #statsPanel>.panel h3{color:#31583a}
-    .stats-group-panel h3{font-family:Georgia,serif;color:#31583a;margin:0 0 12px}
+    #statsPanel .reading-card b{color:#a64d6b}
+    #statsPanel .reading-card span{color:#8a717b}
+    #statsPanel>.panel h3,
+    #statsPanel .stats-group-panel h3{font-family:Georgia,serif;color:#9e4d68;margin:0 0 12px}
+
+    /* BOOK-CARD-RESTORE-V1 — remove the extra green backing from bookshelf books */
+    #bookshelfPanel .book{
+      background:rgba(255,253,252,.93);
+      border-color:#efd5dd;
+      box-shadow:0 8px 22px rgba(180,93,122,.09);
+    }
+    #bookshelfPanel .cover{background:linear-gradient(145deg,#fde3eb,#f7e9ed)}
+    #bookshelfPanel .book-title{color:#9e4d68}
+    #bookshelfPanel .author,
+    #bookshelfPanel .meta{color:#8a717b}
+    #bookshelfPanel .chip{background:#fde3eb;color:#9d4c68}
+
     .stats-pie-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
     .stats-pie{width:190px;height:190px;border-radius:50%;flex:0 0 190px}
     .stats-legend{min-width:220px;max-height:230px;overflow:auto;padding-right:8px}
-    .stats-legend-row{margin:6px 0;font-size:13px;color:#304838}
+    .stats-legend-row{margin:6px 0;font-size:13px;color:#3f3037}
     .stats-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px}
     @media(max-width:600px){
       .stats-pie-wrap{display:block}
       .stats-pie{margin:0 auto 16px}
       .stats-legend{max-height:none}
       #statsPanel{padding:15px}
-      #statsPanel .reading-card,#statsPanel>.panel{background:rgba(246,249,231,.84)}
+      #statsPanel .reading-card,#statsPanel>.panel{background:rgba(255,253,252,.96)}
+      #bookshelfPanel .book{background:rgba(255,253,252,.93)}
     }
   `;
   document.head.appendChild(style);
