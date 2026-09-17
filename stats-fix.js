@@ -1,138 +1,237 @@
-/* My Bookshelf — Reading Stats grouped charts
- * Splits tag/trope statistics into the same sections used by Edit Book.
- * Series is metadata and is never counted as a tag/trope.
- * Spice rating is tracked separately from the Spice / Vibes tag section.
+/* My Bookshelf — Reading Stats V2
+ * Personal Reading Year dashboard: pretty first, useful second.
+ * Uses the existing books JSON in Supabase; no schema changes required.
  */
 (() => {
-  const cleanKey = value => String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (window.__readingStatsV2Installed) return;
+  window.__readingStatsV2Installed = true;
 
-  const TAG_SECTIONS = {
-    'Pairing': ['MM','MF','FF','Poly','Why Choose','Reverse Harem'],
-    'Orientation': ['Gay','Lesbian','Bisexual','Pansexual','Queer','Asexual','Demisexual','Questioning'],
-    'Romance Tropes': ['Enemies to Lovers','Friends to Lovers','Friends with Benefits','Fake Dating','Forced Proximity','Only One Bed','Grumpy x Sunshine','Found Family','Second Chance','Forbidden Romance','Age Gap','Forbidden Love','Opposites Attract','Workplace Romance','Small Town Romance','Sports Romance','College Romance'],
-    'Relationship / Dynamic': ['Possessive','Jealousy','Betrayal','Hurt/Comfort','Slow Burn','High Angst','Fluff','HEA','Happy for Now','Open Relationship','Established Relationship','Secret Relationship','Mutual Pining','Only One Bed'],
-    'Spice / Vibes': ['Sweet','Spicy','Very Spicy','Dark Romance','Dark','Cozy','Angsty','Emotional','Funny','Protective','Morally Gray','Touch Her/Him and Die'],
-    'Fantasy / Paranormal': ['Shifters','Vampires','Werewolves','Omegaverse','Mpreg','Witches','Fae','Demons','Monsters','Magic','Supernatural'],
-    'Genre / Setting': ['Contemporary','Historical','Fantasy','Paranormal','Sci-Fi','RomCom','Mystery','Thriller','Horror','Mafia','Billionaire','Military','Law Enforcement','Cowboys','Academia','High School','College','Workplace','Small Town','Road Trip']
-  };
+  const escHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const clean = value => String(value ?? '').trim().toLowerCase();
+  const booksFromState = () => (typeof state !== 'undefined' && Array.isArray(state.books)) ? state.books : [];
+  const readBooks = books => books.filter(b => clean(b.status) === 'read');
 
-  function countsForSection(books, options) {
-    const allowed = new Set(options.map(cleanKey));
-    const counts = {};
-    options.forEach(option => { counts[option] = 0; });
+  function finishedDate(book) {
+    const raw = book.finished || book.dateFinished || book.completed || '';
+    if (!raw) return null;
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  function yearsAvailable(books) {
+    const years = new Set();
+    books.forEach(book => {
+      const d = finishedDate(book);
+      if (d && clean(book.status) === 'read') years.add(d.getFullYear());
+    });
+    const current = new Date().getFullYear();
+    years.add(current);
+    return [...years].sort((a,b) => b-a);
+  }
+
+  function coverHtml(book, className='stats-book-cover') {
+    const cover = String(book.cover || '').trim();
+    if (cover) return `<img class="${className}" src="${escHtml(cover)}" alt="" loading="lazy">`;
+    return `<div class="${className} stats-cover-placeholder">📖</div>`;
+  }
+
+  function countBy(books, getter) {
+    const map = {};
+    books.forEach(book => {
+      const value = getter(book);
+      if (!value) return;
+      map[value] = (map[value] || 0) + 1;
+    });
+    return map;
+  }
+
+  function topEntries(map, limit=5) {
+    return Object.entries(map).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0])).slice(0, limit);
+  }
+
+  function tagCounts(books) {
+    const map = {};
     books.forEach(book => {
       const seen = new Set();
-      (Array.isArray(book.tags) ? book.tags : []).forEach(tag => {
-        const key = cleanKey(tag);
-        if (allowed.has(key) && !seen.has(key)) {
-          const canonical = options.find(option => cleanKey(option) === key) || tag;
-          counts[canonical] = (counts[canonical] || 0) + 1;
-          seen.add(key);
-        }
+      let tags = book.tags;
+      if (typeof tags === 'string') {
+        try { tags = JSON.parse(tags); } catch (_) { tags = tags.split(','); }
+      }
+      (Array.isArray(tags) ? tags : []).forEach(tag => {
+        const value = String(tag || '').trim();
+        const key = clean(value);
+        if (value && !seen.has(key)) { map[value] = (map[value] || 0) + 1; seen.add(key); }
       });
     });
-    return Object.fromEntries(Object.entries(counts).filter(([, count]) => count > 0));
+    return map;
   }
 
-  function canonicalSpice(value) {
-    const s = String(value ?? '').trim().toLowerCase();
-    if (!s || s === 'not rated' || s === '0' || s === '0 chilis') return 'Not rated';
-    const match = s.match(/[1-5]/);
-    if (!match) return 'Not rated';
-    const n = Number(match[0]);
-    return n === 1 ? '🌶️ 1 chili' : `🌶️ ${n} chilis`;
+  function monthCounts(books, year) {
+    const counts = Array(12).fill(0);
+    books.forEach(book => {
+      const d = finishedDate(book);
+      if (d && d.getFullYear() === year) counts[d.getMonth()] += 1;
+    });
+    return counts;
   }
 
-  function spiceCounts(books) {
-    const order = ['Not rated','🌶️ 1 chili','🌶️ 2 chilis','🌶️ 3 chilis','🌶️ 4 chilis','🌶️ 5 chilis'];
-    const counts = Object.fromEntries(order.map(key => [key, 0]));
-    books.forEach(book => { counts[canonicalSpice(book.spice || book.spiceRating || book.spice_level)] += 1; });
-    return Object.fromEntries(order.filter(key => counts[key] > 0).map(key => [key, counts[key]]));
+  function miniBars(values) {
+    const max = Math.max(1, ...values);
+    return `<div class="stats-month-bars">${values.map((value, i) => {
+      const height = value ? Math.max(8, Math.round(value / max * 100)) : 3;
+      return `<div class="stats-month-col"><div class="stats-bar" style="height:${height}%" title="${value} book${value === 1 ? '' : 's'}"></div><span>${['J','F','M','A','M','J','J','A','S','O','N','D'][i]}</span><b>${value || ''}</b></div>`;
+    }).join('')}</div>`;
   }
 
-  function ensureStatsStyles() {
-    if (document.getElementById('stats-sections-v4')) return;
+  function progressBar(value, max) {
+    const pct = max ? Math.min(100, Math.round(value / max * 100)) : 0;
+    return `<div class="stats-progress"><span style="width:${pct}%"></span></div>`;
+  }
+
+  function bookStrip(books) {
+    if (!books.length) return '<div class="stats-empty">Nothing here yet — this section will fill itself in as you read. 💕</div>';
+    return `<div class="stats-book-strip">${books.slice(0, 8).map(book => `
+      <div class="stats-mini-book" title="${escHtml(book.title || 'Untitled')}">
+        ${coverHtml(book)}
+        <div class="stats-mini-title">${escHtml(book.title || 'Untitled')}</div>
+        ${book.rating ? `<div class="stats-mini-rating">${'★'.repeat(Math.max(0, Math.min(5, Number(book.rating))))} <span>${escHtml(book.rating)}</span></div>` : ''}
+      </div>`).join('')}</div>`;
+  }
+
+  function listRows(entries, total) {
+    if (!entries.length) return '<div class="stats-empty">No data yet.</div>';
+    return entries.map(([name, count]) => `<div class="stats-list-row"><div class="stats-list-label"><span>${escHtml(name)}</span><b>${count}</b></div>${progressBar(count, total)}</div>`).join('');
+  }
+
+  function renderStatsV2() {
+    const panel = document.getElementById('statsPanel');
+    if (!panel) return;
+    const books = booksFromState();
+    const allRead = readBooks(books);
+    const years = yearsAvailable(books);
+    const storedYear = Number(panel.dataset.statsYear);
+    const year = years.includes(storedYear) ? storedYear : years[0];
+    panel.dataset.statsYear = String(year);
+    const yearRead = allRead.filter(book => {
+      const d = finishedDate(book);
+      return d && d.getFullYear() === year;
+    });
+    const rated = yearRead.filter(book => Number(book.rating) > 0);
+    const pages = yearRead.reduce((sum, book) => sum + (Number(book.pages) || 0), 0);
+    const avg = rated.length ? (rated.reduce((sum, book) => sum + Number(book.rating), 0) / rated.length).toFixed(2) : '—';
+    const fiveStars = yearRead.filter(book => Number(book.rating) === 5);
+    const favorites = yearRead.filter(book => Boolean(book.favorite));
+    const longest = [...yearRead].sort((a,b) => (Number(b.pages)||0) - (Number(a.pages)||0))[0];
+    const shortest = [...yearRead].filter(b => Number(b.pages) > 0).sort((a,b) => Number(a.pages)-Number(b.pages))[0];
+    const authors = topEntries(countBy(yearRead, b => String(b.author || '').trim()), 5);
+    const tags = topEntries(tagCounts(yearRead), 6);
+    const months = monthCounts(allRead, year);
+    const bestMonthCount = Math.max(0, ...months);
+    const bestMonthIndex = months.indexOf(bestMonthCount);
+    const bestMonth = bestMonthCount ? new Date(year, bestMonthIndex, 1).toLocaleString('en-US', {month:'long'}) : '—';
+    const currentlyReading = books.filter(b => clean(b.status) === 'currently reading' || clean(b.status) === 'reading');
+    const tbr = books.filter(b => ['tbr','to be read','want to read'].includes(clean(b.status)));
+    const allFavorites = books.filter(b => Boolean(b.favorite));
+
+    panel.innerHTML = `
+      <div class="stats-v2-head">
+        <div>
+          <div class="stats-kicker">✨ YOUR READING YEAR</div>
+          <h2>My ${year} Reading Year</h2>
+          <p>A little look at everything you read, loved, and survived. 📚💕</p>
+        </div>
+        <label class="stats-year-select">Year <select id="statsYearSelect">${years.map(y => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
+      </div>
+
+      <div class="stats-hero-grid">
+        <div class="stats-big-card"><span>📚</span><b>${yearRead.length}</b><small>Books Read</small></div>
+        <div class="stats-big-card"><span>📖</span><b>${pages.toLocaleString()}</b><small>Pages Read</small></div>
+        <div class="stats-big-card"><span>⭐</span><b>${avg}</b><small>Average Rating</small></div>
+        <div class="stats-big-card"><span>💖</span><b>${fiveStars.length}</b><small>5-Star Reads</small></div>
+      </div>
+
+      <div class="stats-feature-grid">
+        <section class="panel stats-feature"><h3>📅 My Reading Year</h3><p class="stats-section-copy">Books finished each month</p>${miniBars(months)}<div class="stats-highlight">${bestMonthCount ? `<b>${bestMonth}</b> was your biggest reading month with <b>${bestMonthCount}</b> book${bestMonthCount === 1 ? '' : 's'}.` : 'Start finishing books to see your year take shape. ✨'}</div></section>
+        <section class="panel stats-feature"><h3>📌 Where I’m At</h3><p class="stats-section-copy">Your bookshelf right now</p><div class="stats-status-stack"><div><span>📖 Currently Reading</span><b>${currentlyReading.length}</b></div><div><span>🛒 On My TBR</span><b>${tbr.length}</b></div><div><span>💗 Favorites</span><b>${allFavorites.length}</b></div></div></section>
+      </div>
+
+      <div class="stats-feature-grid">
+        <section class="panel stats-feature"><h3>💕 My Favorite Reads</h3><p class="stats-section-copy">Your five-star books from ${year}</p>${bookStrip(fiveStars)}</section>
+        <section class="panel stats-feature"><h3>✍️ Authors I Read Most</h3><p class="stats-section-copy">Most books finished by one author</p>${listRows(authors, authors[0]?.[1] || 1)}</section>
+      </div>
+
+      <div class="stats-feature-grid">
+        <section class="panel stats-feature"><h3>🏷️ My Reading Vibe</h3><p class="stats-section-copy">Your most-used tags this year</p>${listRows(tags, tags[0]?.[1] || 1)}</section>
+        <section class="panel stats-feature"><h3>✨ Little Things</h3><p class="stats-section-copy">Because numbers should be fun</p><div class="stats-fun-grid">
+          <div><span>📚 Longest</span><b>${escHtml(longest?.title || '—')}</b><small>${longest?.pages ? `${Number(longest.pages).toLocaleString()} pages` : '—'}</small></div>
+          <div><span>💨 Shortest</span><b>${escHtml(shortest?.title || '—')}</b><small>${shortest?.pages ? `${Number(shortest.pages).toLocaleString()} pages` : '—'}</small></div>
+          <div><span>💖 Favorites</span><b>${favorites.length}</b><small>this year</small></div>
+          <div><span>⭐ 5-Star Rate</span><b>${yearRead.length ? Math.round(fiveStars.length / yearRead.length * 100) : 0}%</b><small>of books read</small></div>
+        </div></section>
+      </div>
+
+      <section class="stats-personality">
+        <div class="stats-personality-kicker">🎀 A LITTLE READING CHECK-IN</div>
+        <h3>${yearRead.length ? 'Your reading life is looking pretty bookish.' : 'Your reading year is waiting for its first chapter.'}</h3>
+        <p>${yearRead.length ? `You finished <b>${yearRead.length}</b> book${yearRead.length === 1 ? '' : 's'} in ${year}${pages ? ` and turned ${pages.toLocaleString()} pages` : ''} — with an average rating of <b>${avg}</b>. ${fiveStars.length ? `You had <b>${fiveStars.length}</b> five-star read${fiveStars.length === 1 ? '' : 's'}, too. 💕` : 'Your five-star shelf is still waiting for its moment. ✨'}` : 'Once you start marking books as finished, this little yearbook will start filling itself in. ✨'}</p>
+      </section>
+    `;
+
+    const select = document.getElementById('statsYearSelect');
+    if (select) select.addEventListener('change', () => { panel.dataset.statsYear = select.value; renderStatsV2(); });
+  }
+
+  function installStyles() {
+    if (document.getElementById('reading-stats-v2-styles')) return;
     const style = document.createElement('style');
-    style.id = 'stats-sections-v4';
+    style.id = 'reading-stats-v2-styles';
     style.textContent = `
-      .stats-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
-      .stats-chart-panel{min-width:0}
-      .stats-chart-panel h3{margin:0 0 12px;font-family:Georgia,serif;color:#684352}
-      .stats-chart-panel .pie-wrap{justify-content:flex-start;align-items:center}
-      .stats-chart-panel .pie-circle{width:165px;height:165px;flex:0 0 165px}
-      .stats-legend{min-width:190px;max-width:100%;font-size:12px;color:#6f5360}
-      .stats-legend-row{display:flex;align-items:center;gap:7px;margin:5px 0}
-      .stats-legend-dot{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
-      .stats-empty{padding:18px 4px;color:var(--muted);font-size:12px}
-      @media(max-width:800px){.stats-chart-grid{grid-template-columns:1fr}}
-      @media(max-width:520px){.stats-chart-panel .pie-wrap{flex-direction:column;align-items:flex-start}.stats-chart-panel .pie-circle{width:150px;height:150px;flex-basis:150px}.stats-legend{min-width:0;width:100%}}
+      #statsPanel{padding:20px}
+      .stats-v2-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:18px}
+      .stats-kicker{font-size:11px;letter-spacing:2px;color:#c05a7b;font-weight:700;margin-bottom:5px}
+      .stats-v2-head h2{font-family:Georgia,serif;color:#9e4d68;font-size:30px;margin:0 0 5px}
+      .stats-v2-head p{margin:0;color:#8a717b;font-size:13px}
+      .stats-year-select{font-size:11px;color:#8a717b;display:flex;align-items:center;gap:7px}.stats-year-select select{padding:8px 12px;border-radius:999px}
+      .stats-hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}
+      .stats-big-card{background:linear-gradient(145deg,rgba(255,247,250,.95),rgba(255,253,252,.98));border:1px solid #efd5dd;border-radius:18px;padding:15px;min-height:112px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 8px 22px rgba(180,93,122,.08)}
+      .stats-big-card span{font-size:18px}.stats-big-card b{font-family:Georgia,serif;color:#a64d6b;font-size:27px;margin:3px 0}.stats-big-card small{font-size:11px;color:#8a717b}
+      .stats-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}.stats-feature{min-width:0}.stats-feature h3{font-family:Georgia,serif;color:#684352;margin:0 0 3px;font-size:19px}.stats-section-copy{color:#8a717b;font-size:11px;margin:0 0 12px}
+      .stats-month-bars{height:145px;display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;padding-top:15px}.stats-month-col{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;position:relative}.stats-month-col b{font-size:9px;color:#a64d6b;min-height:10px}.stats-month-col span{font-size:9px;color:#927782}.stats-bar{width:72%;min-height:3px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#e88ba7,#d96f91)}
+      .stats-highlight{margin-top:12px;padding:9px 11px;border-radius:12px;background:#fff0f4;color:#8a596c;font-size:11px;line-height:1.5}.stats-highlight b{color:#a64d6b}
+      .stats-status-stack{display:grid;gap:8px}.stats-status-stack>div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff8fa;border:1px solid #f0dce2;border-radius:12px;font-size:12px;color:#765967}.stats-status-stack b{color:#a64d6b;font-size:18px}
+      .stats-book-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 8px}.stats-mini-book{flex:0 0 86px}.stats-book-cover{width:86px;height:120px;object-fit:cover;border-radius:9px;background:#fde3eb;display:block;box-shadow:0 6px 14px rgba(180,93,122,.10)}.stats-cover-placeholder{display:flex;align-items:center;justify-content:center;font-size:25px}.stats-mini-title{font-size:10px;color:#684352;font-weight:600;line-height:1.25;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.stats-mini-rating{font-size:9px;color:#d26b8c;margin-top:3px;white-space:nowrap}.stats-mini-rating span{color:#927782}
+      .stats-list-row{margin:9px 0}.stats-list-label{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#6f5360;margin-bottom:4px}.stats-list-label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stats-list-label b{color:#a64d6b}.stats-progress{height:6px;background:#f8e8ed;border-radius:99px;overflow:hidden}.stats-progress span{display:block;height:100%;border-radius:99px;background:#e88ba7}
+      .stats-fun-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stats-fun-grid>div{padding:10px;background:#fff8fa;border:1px solid #f0dce2;border-radius:12px;min-width:0}.stats-fun-grid span,.stats-fun-grid small{display:block;color:#8a717b;font-size:10px}.stats-fun-grid b{display:block;color:#9e4d68;font-family:Georgia,serif;font-size:13px;margin:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .stats-personality{margin-top:2px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#fff0f4,#fff8fa 55%,#f9eff9);border:1px solid #efd1dc;text-align:center}.stats-personality-kicker{font-size:10px;letter-spacing:1.8px;color:#c05a7b;font-weight:700}.stats-personality h3{font-family:Georgia,serif;color:#9e4d68;font-size:22px;margin:7px 0}.stats-personality p{max-width:650px;margin:0 auto;color:#765967;font-size:12px;line-height:1.7}.stats-personality b{color:#a64d6b}.stats-empty{padding:20px 5px;color:#927782;font-size:11px;text-align:center}
+      @media(max-width:800px){.stats-hero-grid{grid-template-columns:repeat(2,1fr)}.stats-feature-grid{grid-template-columns:1fr}}
+      @media(max-width:560px){#statsPanel{padding:15px}.stats-v2-head{align-items:flex-start;flex-direction:column}.stats-v2-head h2{font-size:25px}.stats-year-select{align-self:flex-start}.stats-hero-grid{grid-template-columns:1fr 1fr;gap:8px}.stats-big-card{min-height:98px}.stats-big-card b{font-size:23px}.stats-month-bars{gap:2px}.stats-month-col span{font-size:8px}.stats-bar{width:80%}}
     `;
     document.head.appendChild(style);
   }
 
-  function pieCard(title, counts) {
-    if (!Object.keys(counts).length) {
-      return `<div class="panel stats-chart-panel"><h3>${esc(title)}</h3><div class="stats-empty">No books have been tagged in this section yet.</div></div>`;
-    }
-    const vals = Object.entries(counts);
-    const total = vals.reduce((sum, [, value]) => sum + value, 0);
-    const colors = ['#e99ab5','#c9a0e9','#8fd3c7','#f2bd73','#9bb8e8','#e8a5a5','#d99bb6','#a9c8a5','#c3a6df','#efb0a8','#9fc9d9','#e7c07b'];
-    let start = 0;
-    const stops = vals.map(([, value], index) => {
-      const end = start + value / total * 360;
-      const stop = `${colors[index % colors.length]} ${start}deg ${end}deg`;
-      start = end;
-      return stop;
-    }).join(',');
-    const legend = vals.map(([key, value], index) =>
-      `<div class="stats-legend-row"><span class="stats-legend-dot" style="background:${colors[index % colors.length]}"></span><span>${esc(key)}: ${value}</span></div>`
-    ).join('');
-    return `<div class="panel stats-chart-panel"><h3>${esc(title)}</h3><div class="pie-wrap" style="display:flex;gap:22px;flex-wrap:wrap"><div class="pie-circle" style="border-radius:50%;background:conic-gradient(${stops})"></div><div class="stats-legend">${legend}</div></div></div>`;
-  }
-
-  function renderCleanStats() {
-    const p = document.getElementById('statsPanel');
-    if (!p || typeof state === 'undefined') return;
-    ensureStatsStyles();
-    const books = Array.isArray(state.books) ? state.books : [];
-    const read = books.filter(b => cleanKey(b.status) === 'read');
-    const byStatus = {};
-    books.forEach(book => {
-      const status = String(book.status || 'Other').trim() || 'Other';
-      byStatus[status] = (byStatus[status] || 0) + 1;
-    });
-    const pages = read.reduce((sum, book) => sum + (Number(book.pages) || 0), 0).toLocaleString();
-    const ratedRead = read.filter(book => Number(book.rating) > 0);
-    const avg = ratedRead.length ? (ratedRead.reduce((sum, book) => sum + Number(book.rating || 0), 0) / ratedRead.length).toFixed(1) : '—';
-    const favorites = books.filter(book => book.favorite).length;
-    const sectionCharts = Object.entries(TAG_SECTIONS).map(([name, options]) => pieCard(name, countsForSection(books, options))).join('');
-    const spiceChart = pieCard('🌶️ Spice Rating', spiceCounts(books));
-    p.innerHTML = `<div class="section-title">📊 Reading Stats</div>
-      <div class="section-sub">Your reading numbers at a glance — organized by your Edit Book tag sections. 🎀</div>
-      <div class="reading-grid">
-        <div class="reading-card"><b>${read.length}</b><span>Books finished</span></div>
-        <div class="reading-card"><b>${pages}</b><span>Pages read</span></div>
-        <div class="reading-card"><b>${avg}</b><span>Average rating</span></div>
-        <div class="reading-card"><b>${favorites}</b><span>Favorites</span></div>
-      </div>
-      <div class="panel" style="margin-top:14px"><h3>Books by status</h3>${typeof pie === 'function' ? pie(byStatus) : '<div class="stats-empty">Not enough data yet.</div>'}</div>
-      <div class="stats-chart-grid">${sectionCharts}${spiceChart}</div>`;
-  }
-
   function install() {
-    if (typeof renderStats !== 'function') return false;
-    renderStats = renderCleanStats;
-    return true;
+    installStyles();
+    if (typeof window.renderStats === 'function') {
+      window.renderStats = renderStatsV2;
+      renderStatsV2();
+      return true;
+    }
+    if (typeof renderStats === 'function') {
+      renderStats = renderStatsV2;
+      renderStatsV2();
+      return true;
+    }
+    return false;
   }
 
   let tries = 0;
   const timer = setInterval(() => {
     tries += 1;
-    if (install() || tries > 100) clearInterval(timer);
+    if (install() || tries > 120) clearInterval(timer);
   }, 100);
 })();
 
-/* Load the AO3 importer after the main app has defined state/render helpers. */
+/* Keep the existing AO3 importer and stale fanfiction cleanup behavior. */
 (() => {
   const id = 'ao3-import-script';
   if (document.getElementById(id)) return;
@@ -143,11 +242,6 @@
   document.head.appendChild(script);
 })();
 
-/* FANFICTION-UI-CLEANUP
- * The AO3 importer currently renders the useful combined Fanfiction section,
- * but an older insights block can also be injected above it. Remove only that
- * stale duplicate so the page has one set of fanfiction statistics.
- */
 (() => {
   const removeDuplicateInsights = () => {
     const root = document.getElementById('fanfictionPanel');
