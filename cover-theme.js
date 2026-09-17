@@ -37,8 +37,7 @@
   function loadUnreadStatusFix(){if(document.getElementById('unread-status-fix-script'))return;const script=document.createElement('script');script.id='unread-status-fix-script';script.src='unread-status-fix.js?v=20260819-fix5';script.defer=true;document.head.appendChild(script);}
   function loadBookshelfRepair(){if(document.getElementById('bookshelf-repair-script'))return;const script=document.createElement('script');script.id='bookshelf-repair-script';script.src='bookshelf-repair.js?v=20260819-fix1';script.defer=true;document.head.appendChild(script);}
   function loadCloudSyncSafe(){if(document.getElementById('cloud-sync-safe-script'))return;const script=document.createElement('script');script.id='cloud-sync-safe-script';script.src='cloud-sync-safe.js?v=20260917-syncfix7';script.defer=true;document.head.appendChild(script);}
-  function loadReadingStatsSections(){if(document.getElementById('reading-stats-sections-script'))return;const script=document.createElement('script');script.id='reading-stats-sections-script';script.src='reading-stats-sections.js?v=20260819-fix1';script.defer=true;document.head.appendChild(script);}
   function apply(){installStyles();document.querySelectorAll('.book').forEach(themeCard);}
-  function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();loadUnreadSection();loadUnreadStatusFix();loadBookshelfRepair();loadCloudSyncSafe();loadReadingStatsSections();}
+  function start(){loadFloralVines();apply();loadBooksToBuy();loadSpiceFix();loadUnreadSection();loadUnreadStatusFix();loadBookshelfRepair();loadCloudSyncSafe();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
