@@ -9,7 +9,7 @@
   const eq=(a,b)=>{try{return JSON.stringify(a)===JSON.stringify(b);}catch(_){return String(a)===String(b);}};
   const fallbackKey=x=>String(x?.title||x?.name||'').trim().toLowerCase()+'|'+String(x?.author||'').trim().toLowerCase()+'|'+String(x?.url||x?.link||'').trim().toLowerCase();
   const key=x=>{const id=String(x?.id||'').trim();return id?'id:'+id.toLowerCase():'legacy:'+fallbackKey(x);};
-  const readBase=u=>{try{return JSON.parse(localStorage.getItem(BASE+u)||'null');}catch(_){return null;}};
+  const readBase=u=>{try{const v6=localStorage.getItem(BASE+u);if(v6)return JSON.parse(v6);const old=localStorage.getItem('my-bookshelf-sync-base-v5:'+u);return old?JSON.parse(old):null;}catch(_){return null;}};
   const saveBase=(u,x)=>{try{localStorage.setItem(BASE+u,JSON.stringify(cp(x)));}catch(_) {}};
   let busy=false;
 
