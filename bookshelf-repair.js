@@ -15,7 +15,14 @@
     const tags = Array.isArray(b.tags) ? b.tags : (b.tags ? [b.tags] : []);
     const id = escapeHtml(b.id || '');
     const cover = typeof b.cover === 'string' ? b.cover : '';
-    return `<article class="book"><div class="cover">${cover ? `<img src="${escapeHtml(cover)}" alt="">` : '<div class="cover-placeholder">📖</div>'}<button class="heart" onclick="toggleFav('${id}')">${b.favorite ? '♥' : '♡'}</button></div><div class="book-body"><div class="book-title">${escapeHtml(b.title || b.name || 'Untitled')}</div><div class="author">${escapeHtml(b.author || 'Unknown author')}</div><div class="chips">${tags.slice(0,4).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}</div><div class="meta">${escapeHtml(b.status || '')} · ${b.rating ? stars(b.rating) : 'No rating'}<br>📄 ${Number(b.pages || 0).toLocaleString()} pages</div><div class="book-actions"><button class="btn" onclick="editBook('${id}')">Edit</button><button class="btn" onclick="deleteBook('${id}')">Delete</button></div></div></article>`;
+    const status = String(b.status || '').trim().toLowerCase();
+    const total = Math.max(0, Number(b.pages || 0));
+    const current = Math.max(0, Number(b.currentPage || 0));
+    const pct = total ? Math.min(100, Math.round(current / total * 100)) : 0;
+    const progress = CURRENT.has(status) && total ? `<div class="reading-progress"><div class="reading-progress-label"><span>📖 ${current.toLocaleString()} / ${total.toLocaleString()} pages</span><b>${pct}%</b></div><div class="reading-progress-track"><span style="width:${pct}%"></span></div></div>` : '';
+    const dnfDetails = DNF.has(status) && (b.dnfDate || b.dnfPage || b.dnfReason) ? `<div class="dnf-note">💀 ${b.dnfDate ? 'DNF’d '+escapeHtml(b.dnfDate) : ''}${b.dnfPage ? ' · page '+Number(b.dnfPage).toLocaleString() : ''}${b.dnfReason ? '<br>'+escapeHtml(b.dnfReason) : ''}</div>` : '';
+    const extraClass = CURRENT.has(status) ? ' book-reading' : (DNF.has(status) ? ' book-dnf' : '');
+    return `<article class="book${extraClass}"><div class="cover">${cover ? `<img src="${escapeHtml(cover)}" alt="">` : '<div class="cover-placeholder">📖</div>'}<button class="heart" onclick="toggleFav('${id}')">${b.favorite ? '♥' : '♡'}</button></div><div class="book-body"><div class="book-title">${escapeHtml(b.title || b.name || 'Untitled')}</div><div class="author">${escapeHtml(b.author || 'Unknown author')}</div><div class="chips">${tags.slice(0,4).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}</div><div class="meta">${escapeHtml(b.status || '')} · ${b.rating ? stars(b.rating) : 'No rating'}<br>📄 ${total.toLocaleString()} pages</div>${progress}${dnfDetails}<div class="book-actions"><button class="btn" onclick="editBook('${id}')">Edit</button><button class="btn" onclick="deleteBook('${id}')">Delete</button></div></div></article>`;
   }
 
   function install() {
