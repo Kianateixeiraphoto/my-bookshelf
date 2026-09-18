@@ -132,6 +132,19 @@
       box-shadow:none !important;
       border-radius:0 !important;
     }
+    /* The mint inset visible in the screenshot comes from the book body's own
+       rounded outline/background treatment. Flatten every paint layer on that
+       information pane so the tan outer .book card shows through. */
+    #bookshelfPanel .book > .book-body,
+    #bookshelfPanel .book .book-body::before,
+    #bookshelfPanel .book .book-body::after{
+      background:none !important;
+      background-color:transparent !important;
+      background-image:none !important;
+      border:0 !important;
+      outline:0 !important;
+      box-shadow:none !important;
+    }
 
     /* Restore the bookshelf section panels removed in the previous pass. */
     #bookshelfPanel #currentlySection .panel,
@@ -143,10 +156,8 @@
     }
 
     /* Make section headings readable over the forest artwork. */
-    #bookshelfPanel #currentlySection > .section-title,
-    #bookshelfPanel #currentlySection > .section-sub,
-    #bookshelfPanel #archivedSection > .section-title,
-    #bookshelfPanel #archivedSection > .section-sub{
+    #bookshelfPanel .section > .section-title,
+    #bookshelfPanel .section > .section-sub{
       background:rgba(255,248,232,.90);
       border:1px solid rgba(208,191,134,.72);
       padding-left:10px;
@@ -154,15 +165,13 @@
       width:max-content;
       max-width:100%;
     }
-    #bookshelfPanel #currentlySection > .section-title,
-    #bookshelfPanel #archivedSection > .section-title{
+    #bookshelfPanel .section > .section-title{
       border-radius:12px 12px 0 0;
       padding-top:5px;
       padding-bottom:3px;
       margin-bottom:0;
     }
-    #bookshelfPanel #currentlySection > .section-sub,
-    #bookshelfPanel #archivedSection > .section-sub{
+    #bookshelfPanel .section > .section-sub{
       border-top:0;
       border-radius:0 0 12px 12px;
       padding-top:3px;
