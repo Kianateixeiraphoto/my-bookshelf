@@ -88,6 +88,21 @@
 
     html += '<div class="panel" style="margin-top:14px"><h3>Books by status</h3>' + pie(byStatus) + '</div>';
 
+    const finishedBooks = books.filter(b => b.dateFinished && normalize(b.status) === 'read');
+    const now = new Date();
+    let calYear = now.getFullYear(), calMonth = now.getMonth();
+    if (finishedBooks.length) {
+      const latest = finishedBooks.map(b=>new Date(b.dateFinished+'T12:00:00')).filter(d=>!isNaN(d)).sort((a,b)=>b-a)[0];
+      if (latest) { calYear=latest.getFullYear(); calMonth=latest.getMonth(); }
+    }
+    const monthName = new Date(calYear,calMonth,1).toLocaleString(undefined,{month:'long',year:'numeric'});
+    const firstDay = new Date(calYear,calMonth,1).getDay(), days = new Date(calYear,calMonth+1,0).getDate();
+    const dayBooks = {};
+    finishedBooks.forEach(b=>{const d=new Date(b.dateFinished+'T12:00:00');if(d.getFullYear()===calYear&&d.getMonth()===calMonth)(dayBooks[d.getDate()] ||= []).push(b)});
+    let cells = Array(firstDay).fill('<div class="calendar-day blank"></div>').join('');
+    for(let day=1;day<=days;day++){const items=dayBooks[day]||[];cells += '<div class="calendar-day"><b>'+day+'</b><div class="calendar-covers">'+items.map(b=>b.cover?'<img src="'+esc(b.cover)+'" title="'+esc(b.title||'')+'" alt="'+esc(b.title||'')+'">':'<span title="'+esc(b.title||'')+'">📖</span>').join('')+'</div></div>'}
+    html += '<div class="panel stats-calendar-panel" style="margin-top:14px"><h3>🗓️ Reading Calendar</h3><div class="section-sub">Books finished in '+esc(monthName)+'.</div><div class="calendar-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="reading-calendar">'+cells+'</div></div>';
+
     groups.forEach(group => {
       const data = grouped.get(group.title) || {};
       html += '<div class="panel stats-group-panel" style="margin-top:14px"><h3>' + group.title + '</h3>' + pie(data) + '</div>';
@@ -188,6 +203,7 @@
     .stats-legend{min-width:220px;max-height:230px;overflow:auto;padding-right:8px}
     .stats-legend-row{margin:6px 0;font-size:13px;color:#3f3037}
     .stats-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+    .calendar-weekdays,.reading-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.calendar-weekdays{margin-top:10px}.calendar-weekdays span{text-align:center;font-size:10px;color:#8a717b;font-weight:700}.calendar-day{min-height:86px;border:1px solid #efd5dd;border-radius:10px;padding:6px;background:rgba(255,250,251,.82)}.calendar-day.blank{visibility:hidden}.calendar-day>b{font-size:11px;color:#9e4d68}.calendar-covers{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}.calendar-covers img{width:31px;height:45px;object-fit:cover;border-radius:4px;box-shadow:0 2px 5px rgba(80,40,55,.15)}.calendar-covers span{font-size:22px}
     @media(max-width:600px){
       .stats-pie-wrap{display:block}
       .stats-pie{margin:0 auto 16px}
@@ -195,6 +211,7 @@
       #statsPanel{padding:15px}
       #statsPanel .reading-card,#statsPanel>.panel{background:rgba(255,253,252,.96)}
       #bookshelfPanel .book{background:rgba(255,253,252,.97)}
+      .calendar-weekdays,.reading-calendar{gap:3px}.calendar-day{min-height:62px;padding:4px}.calendar-covers img{width:22px;height:33px}.calendar-weekdays span{font-size:8px}
     }
   `;
   document.head.appendChild(style);
