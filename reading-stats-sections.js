@@ -126,6 +126,15 @@
       box-shadow:0 8px 22px rgba(57,69,36,.10);
     }
     #bookshelfPanel .book-body{background:transparent}
+    /* Remove the extra tinted shelf-section layer; keep only the individual book cards. */
+    #bookshelfPanel #currentlySection .panel,
+    #bookshelfPanel #archivedSection .panel{
+      background:transparent;
+      border-color:transparent;
+      box-shadow:none;
+      padding-left:0;
+      padding-right:0;
+    }
     #bookshelfPanel .book-title{color:#31583a}
     #bookshelfPanel .author,
     #bookshelfPanel .meta{color:#62735c}
