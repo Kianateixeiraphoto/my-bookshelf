@@ -120,20 +120,54 @@
     #statsPanel .stats-group-panel h3{font-family:Georgia,serif;color:#9e4d68;margin:0 0 12px}
 
     /* BOOKSHELF-CARD-CLEAN-V2 — keep the forest page, but make book info cards neutral */
+    /* Keep the tan/cream outer book entry, but remove the green inset behind its text. */
     #bookshelfPanel .book{
-      background:rgba(255,253,252,.97);
-      border-color:rgba(93,113,78,.20);
-      box-shadow:0 8px 22px rgba(57,69,36,.10);
+      background:rgba(255,249,233,.96);
+      border-color:#d3c28b;
+      box-shadow:0 8px 22px rgba(10,45,28,.15);
     }
-    #bookshelfPanel .book-body{background:transparent}
-    /* Remove the extra tinted shelf-section layer; keep only the individual book cards. */
+    #bookshelfPanel .book-body{
+      background:transparent !important;
+      border:none !important;
+      box-shadow:none !important;
+      border-radius:0 !important;
+    }
+
+    /* Restore the bookshelf section panels removed in the previous pass. */
     #bookshelfPanel #currentlySection .panel,
     #bookshelfPanel #archivedSection .panel{
-      background:transparent;
-      border-color:transparent;
-      box-shadow:none;
-      padding-left:0;
-      padding-right:0;
+      background:rgba(255,248,232,.88);
+      border-color:#d0bf86;
+      box-shadow:var(--shadow);
+      padding:18px;
+    }
+
+    /* Make section headings readable over the forest artwork. */
+    #bookshelfPanel #currentlySection > .section-title,
+    #bookshelfPanel #currentlySection > .section-sub,
+    #bookshelfPanel #archivedSection > .section-title,
+    #bookshelfPanel #archivedSection > .section-sub{
+      background:rgba(255,248,232,.90);
+      border:1px solid rgba(208,191,134,.72);
+      padding-left:10px;
+      padding-right:10px;
+      width:max-content;
+      max-width:100%;
+    }
+    #bookshelfPanel #currentlySection > .section-title,
+    #bookshelfPanel #archivedSection > .section-title{
+      border-radius:12px 12px 0 0;
+      padding-top:5px;
+      padding-bottom:3px;
+      margin-bottom:0;
+    }
+    #bookshelfPanel #currentlySection > .section-sub,
+    #bookshelfPanel #archivedSection > .section-sub{
+      border-top:0;
+      border-radius:0 0 12px 12px;
+      padding-top:3px;
+      padding-bottom:6px;
+      margin-top:0;
     }
     #bookshelfPanel .book-title{color:#31583a}
     #bookshelfPanel .author,
