@@ -103,7 +103,14 @@
   }
 
 
-  function calendarHtml(books, year) { const dated=books.filter(b=>finishedDate(b)); const latest=dated.length?[...dated].sort((a,b)=>finishedDate(b)-finishedDate(a))[0]:null; const m=latest?finishedDate(latest).getMonth():new Date().getMonth(), y=latest?finishedDate(latest).getFullYear():year; const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),byDay={}; dated.forEach(b=>{const d=finishedDate(b);if(d&&d.getFullYear()===y&&d.getMonth()===m)(byDay[d.getDate()]||=[]).push(b)}); let cells=Array(first).fill('<div class="stats-cal-day blank"></div>').join(''); for(let d=1;d<=days;d++){const items=byDay[d]||[];cells+='<div class="stats-cal-day"><b>'+d+'</b><div>'+items.map(book=>book.cover?'<img src="'+escHtml(book.cover)+'" title="'+escHtml(book.title||'')+'" alt="">':'<span title="'+escHtml(book.title||'')+'">📖</span>').join('')+'</div></div>'} return '<div class="stats-cal-title">'+new Date(y,m,1).toLocaleString('en-US',{month:'long',year:'numeric'})+'</div><div class="stats-cal-week"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="stats-calendar">'+cells+'</div>'; }
+  function calendarDate(raw){if(!raw)return null;const m=String(raw).match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));const d=new Date(raw);return Number.isNaN(d.getTime())?null:d;}
+  function startedDate(book){return calendarDate(book.dateStarted||book.started||book.startDate||'');}
+  function calendarHtml(books, year, month) {
+    const y=year,m=month,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),byDay={};
+    books.forEach(book=>{const finish=finishedDate(book),start=startedDate(book)||finish;if(!start||!finish)return;let a=new Date(start.getFullYear(),start.getMonth(),start.getDate()),z=new Date(finish.getFullYear(),finish.getMonth(),finish.getDate());if(a>z)[a,z]=[z,a];for(let d=new Date(a);d<=z;d.setDate(d.getDate()+1)){if(d.getFullYear()===y&&d.getMonth()===m)(byDay[d.getDate()]||=[]).push(book)}});
+    let cells=Array(first).fill('<div class="stats-cal-day blank"></div>').join('');for(let d=1;d<=days;d++){const items=byDay[d]||[];cells+='<div class="stats-cal-day"><b>'+d+'</b><div>'+items.map(book=>book.cover?'<img src="'+escHtml(book.cover)+'" title="'+escHtml(book.title||'')+'" alt="">':'<span title="'+escHtml(book.title||'')+'">📖</span>').join('')+'</div></div>'}
+    return '<div class="stats-cal-nav"><button type="button" id="statsCalPrev" aria-label="Previous month">‹</button><div class="stats-cal-title">'+new Date(y,m,1).toLocaleString('en-US',{month:'long',year:'numeric'})+'</div><button type="button" id="statsCalNext" aria-label="Next month">›</button></div><div class="stats-cal-week"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="stats-calendar">'+cells+'</div>';
+  }
 
   function renderStatsV2() {
     const panel = document.getElementById('statsPanel');
@@ -134,6 +141,10 @@
     const currentlyReading = books.filter(b => clean(b.status) === 'currently reading' || clean(b.status) === 'reading');
     const tbr = books.filter(b => ['tbr','to be read','want to read'].includes(clean(b.status)));
     const allFavorites = books.filter(b => Boolean(b.favorite));
+    const latestFinished = yearRead.length ? [...yearRead].sort((a,b)=>finishedDate(b)-finishedDate(a))[0] : null;
+    let calMonth = Number(panel.dataset.calendarMonth);
+    if(!Number.isInteger(calMonth)||calMonth<0||calMonth>11) calMonth = latestFinished ? finishedDate(latestFinished).getMonth() : new Date().getMonth();
+    panel.dataset.calendarMonth=String(calMonth);
 
     panel.innerHTML = `
       <div class="stats-v2-head">
@@ -146,7 +157,7 @@
         <div class="stats-big-card"><span>⭐</span><b>${avg}</b><small>Average Rating</small></div>
         <div class="stats-big-card"><span>💖</span><b>${fiveStars.length}</b><small>5-Star Reads</small></div>
       </div>
-      <section class="panel stats-feature stats-calendar-full"><h3>🗓️ Reading Calendar</h3><p class="stats-section-copy">Every finished book on the day you completed it.</p>${calendarHtml(yearRead, year)}</section>\n      <div class="stats-feature-grid">
+      <section class="panel stats-feature stats-calendar-full"><h3>🗓️ Reading Calendar</h3><p class="stats-section-copy">See each book on every day from start to finish.</p>${calendarHtml(yearRead, year, calMonth)}</section>\n      <div class="stats-feature-grid">
         <section class="panel stats-feature"><h3>📅 My Reading Year</h3><p class="stats-section-copy">Books finished each month</p>${miniBars(months)}<div class="stats-highlight">${bestMonthCount ? `<b>${bestMonth}</b> was your biggest reading month with <b>${bestMonthCount}</b> book${bestMonthCount === 1 ? '' : 's'}.` : 'Start finishing books to see your year take shape. ✨'}</div></section>
         <section class="panel stats-feature"><h3>📌 Where I’m At</h3><p class="stats-section-copy">Your bookshelf right now</p><div class="stats-status-stack"><div><span>📖 Currently Reading</span><b>${currentlyReading.length}</b></div><div><span>🛒 On My TBR</span><b>${tbr.length}</b></div><div><span>💗 Favorites</span><b>${allFavorites.length}</b></div></div></section>
       </div>
@@ -166,7 +177,9 @@
       <section class="stats-personality"><div class="stats-personality-kicker">🎀 A LITTLE READING CHECK-IN</div><h3>${yearRead.length ? 'Your reading life is looking pretty bookish.' : 'Your reading year is waiting for its first chapter.'}</h3><p>${yearRead.length ? `You finished <b>${yearRead.length}</b> book${yearRead.length === 1 ? '' : 's'} in ${year}${pages ? ` and turned ${pages.toLocaleString()} pages` : ''} — with an average rating of <b>${avg}</b>. ${fiveStars.length ? `You had <b>${fiveStars.length}</b> five-star read${fiveStars.length === 1 ? '' : 's'}, too. 💕` : 'Your five-star shelf is still waiting for its moment. ✨'}` : 'Once you start marking books as finished, this little yearbook will start filling itself in. ✨'}</p></section>
     `;
     const select = document.getElementById('statsYearSelect');
-    if (select) select.addEventListener('change', () => { panel.dataset.statsYear = select.value; renderStatsV2(); });
+    if (select) select.addEventListener('change', () => { panel.dataset.statsYear = select.value; delete panel.dataset.calendarMonth; renderStatsV2(); });
+    document.getElementById('statsCalPrev')?.addEventListener('click',()=>{if(calMonth===0){const i=years.indexOf(year);if(i<years.length-1)panel.dataset.statsYear=String(years[i+1]);panel.dataset.calendarMonth='11'}else panel.dataset.calendarMonth=String(calMonth-1);renderStatsV2()});
+    document.getElementById('statsCalNext')?.addEventListener('click',()=>{if(calMonth===11){const i=years.indexOf(year);if(i>0)panel.dataset.statsYear=String(years[i-1]);panel.dataset.calendarMonth='0'}else panel.dataset.calendarMonth=String(calMonth+1);renderStatsV2()});
   }
 
   function installStyles() {
@@ -183,7 +196,7 @@
       .stats-list-row{margin:9px 0}.stats-list-label{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#6f5360;margin-bottom:4px}.stats-list-label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stats-list-label b{color:#a64d6b}.stats-progress{height:6px;background:#f8e8ed;border-radius:99px;overflow:hidden}.stats-progress span{display:block;height:100%;border-radius:99px;background:#e88ba7}
       .stats-fun-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stats-fun-grid>div{padding:10px;background:#fff8fa;border:1px solid #f0dce2;border-radius:12px;min-width:0}.stats-fun-grid span,.stats-fun-grid small{display:block;color:#8a717b;font-size:10px}.stats-fun-grid b{display:block;color:#9e4d68;font-family:Georgia,serif;font-size:13px;margin:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .stats-personality{margin-top:2px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#fff0f4,#fff8fa 55%,#f9eff9);border:1px solid #efd1dc;text-align:center}.stats-personality-kicker{font-size:10px;letter-spacing:1.8px;color:#c05a7b;font-weight:700}.stats-personality h3{font-family:Georgia,serif;color:#9e4d68;font-size:22px;margin:7px 0}.stats-personality p{max-width:650px;margin:0 auto;color:#765967;font-size:12px;line-height:1.7}.stats-personality b{color:#a64d6b}.stats-empty{padding:20px 5px;color:#927782;font-size:11px;text-align:center}
-      .stats-calendar-full{margin-bottom:14px}.stats-cal-title{text-align:center;font-family:Georgia,serif;color:#9e4d68;font-weight:700;margin:4px 0 9px}.stats-cal-week,.stats-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.stats-cal-week span{text-align:center;font-size:9px;color:#927782;font-weight:700}.stats-cal-day{min-height:84px;padding:6px;border:1px solid #efd5dd;border-radius:10px;background:#fffafb}.stats-cal-day.blank{visibility:hidden}.stats-cal-day>b{font-size:10px;color:#9e4d68}.stats-cal-day>div{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}.stats-cal-day img{width:30px;height:43px;object-fit:cover;border-radius:4px}.stats-cal-day span{font-size:20px}
+      .stats-calendar-full{margin-bottom:14px}.stats-cal-nav{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;margin:4px 0 9px}.stats-cal-nav button{border:1px solid #e8cbd5;background:#fff8fb;color:#a64d6b;border-radius:999px;width:36px;height:36px;font-size:24px;line-height:1;cursor:pointer}.stats-cal-nav button:hover{background:#fff0f4}.stats-cal-title{text-align:center;font-family:Georgia,serif;color:#9e4d68;font-weight:700;margin:4px 0 9px}.stats-cal-week,.stats-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.stats-cal-week span{text-align:center;font-size:9px;color:#927782;font-weight:700}.stats-cal-day{min-height:84px;padding:6px;border:1px solid #efd5dd;border-radius:10px;background:#fffafb}.stats-cal-day.blank{visibility:hidden}.stats-cal-day>b{font-size:10px;color:#9e4d68}.stats-cal-day>div{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}.stats-cal-day img{width:30px;height:43px;object-fit:cover;border-radius:4px}.stats-cal-day span{font-size:20px}
       /* Readability layer — deliberately visible over the floral background */
       .stats-feature h3{display:inline-block;position:relative;z-index:2;padding:8px 14px;border-radius:13px;background:rgba(255,248,251,.98);border:1px solid #e8cbd5;box-shadow:0 5px 14px rgba(120,70,90,.12);text-shadow:none}
       .stats-v2-head h2{display:inline-block;position:relative;z-index:2;padding:6px 14px;border-radius:13px;background:rgba(255,248,251,.98);border:1px solid #ead0d8;box-shadow:0 5px 14px rgba(120,70,90,.10)}
