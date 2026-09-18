@@ -15,3 +15,39 @@ html.home-screen-app #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .bo
   #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .cover{height:140px!important;min-height:140px!important;max-height:140px!important;flex:0 0 140px!important}
   #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .book-body{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:0 0 auto!important}
 }
+/* Compact special-status cards in the installed Home Screen app only.
+   Keep progress/DNF content, remove legacy fixed-height desktop sizing. */
+html.home-screen-app #bookshelfPanel .book.book-reading,
+html.home-screen-app #bookshelfPanel .book.book-dnf{
+  height:fit-content!important;
+  min-height:0!important;
+  max-height:none!important;
+  align-self:start!important;
+}
+html.home-screen-app #bookshelfPanel .book.book-reading .cover,
+html.home-screen-app #bookshelfPanel .book.book-dnf .cover{
+  height:210px!important;
+  min-height:210px!important;
+  max-height:210px!important;
+  flex:0 0 210px!important;
+}
+html.home-screen-app #bookshelfPanel .book.book-reading .book-body,
+html.home-screen-app #bookshelfPanel .book.book-dnf .book-body{
+  height:auto!important;
+  min-height:210px!important;
+  max-height:none!important;
+  overflow:visible!important;
+  flex:0 0 auto!important;
+}
+html.home-screen-app #bookshelfPanel .book.book-reading .reading-progress,
+html.home-screen-app #bookshelfPanel .book.book-dnf .dnf-note{
+  display:block!important;
+}
+@media (display-mode: standalone) and (max-width:600px){
+  #bookshelfPanel .book.book-reading,
+  #bookshelfPanel .book.book-dnf{height:fit-content!important;min-height:0!important;max-height:none!important;align-self:start!important}
+  #bookshelfPanel .book.book-reading .cover,
+  #bookshelfPanel .book.book-dnf .cover{height:210px!important;min-height:210px!important;max-height:210px!important;flex:0 0 210px!important}
+  #bookshelfPanel .book.book-reading .book-body,
+  #bookshelfPanel .book.book-dnf .book-body{height:auto!important;min-height:210px!important;max-height:none!important;overflow:visible!important;flex:0 0 auto!important}
+}
