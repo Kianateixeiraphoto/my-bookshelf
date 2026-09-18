@@ -1,23 +1,17 @@
-/* iPhone Home Screen app layout guard.
-   Intentionally scoped to standalone display mode so the normal website is untouched. */
-@media (display-mode: standalone) and (max-width: 600px){
+/* Installed Home Screen app only. Normal Safari/desktop website is intentionally untouched. */
+html.home-screen-app #bookshelfPanel .shelf{align-items:start!important}
+html.home-screen-app #bookshelfPanel .book:not(.book-reading):not(.book-dnf){
+  height:fit-content!important;min-height:0!important;max-height:none!important;align-self:start!important;
+}
+html.home-screen-app #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .cover{
+  height:140px!important;min-height:140px!important;max-height:140px!important;flex:0 0 140px!important;
+}
+html.home-screen-app #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .book-body{
+  height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:0 0 auto!important;
+}
+@media (display-mode: standalone) and (max-width:600px){
   #bookshelfPanel .shelf{align-items:start!important}
-  #bookshelfPanel .book:not(.book-reading):not(.book-dnf){
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    align-self:start!important;
-  }
-  #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .cover{
-    height:140px!important;
-    min-height:140px!important;
-    max-height:140px!important;
-    flex-basis:140px!important;
-  }
-  #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .book-body{
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    overflow:visible!important;
-  }
+  #bookshelfPanel .book:not(.book-reading):not(.book-dnf){height:fit-content!important;min-height:0!important;max-height:none!important;align-self:start!important}
+  #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .cover{height:140px!important;min-height:140px!important;max-height:140px!important;flex:0 0 140px!important}
+  #bookshelfPanel .book:not(.book-reading):not(.book-dnf) .book-body{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:0 0 auto!important}
 }
