@@ -319,9 +319,14 @@ window.addBook = function(book = {}) {
       <label>Date finished<input name="dateFinished" type="date" value="${esc(finished)}"></label>
       <div class="wide">
         <label>Cover image</label>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px">
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-top:6px">
           ${coverPreview}
-          <div><input id="coverFile" type="file" accept="image/*"><div class="status" style="margin-top:5px">Optional. Images are stored in this browser with your book data.</div></div>
+          <div style="flex:1;min-width:240px">
+            <label style="display:block">Image address<input name="coverUrl" type="url" value="${esc(book.cover || '')}" placeholder="https://example.com/book-cover.jpg" style="width:100%;margin-top:4px"></label>
+            <div class="status" style="margin:6px 0">OR upload a cover from your device:</div>
+            <input id="coverFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+            <div id="coverUploadStatus" class="status" style="margin-top:5px">JPG, PNG, WebP or GIF · max 5 MB. Uploaded covers are saved to your bookshelf cloud storage.</div>
+          </div>
         </div>
       </div>
       <div class="wide tag-picker" id="bookTags" data-tag-sections-v2="true">
@@ -356,11 +361,31 @@ window.addBook = function(book = {}) {
       saveLocal(); closeModal(); render(); sync();
     };
     const file = $('coverFile')?.files?.[0];
+    const typedCoverUrl = String(x.coverUrl || '').trim();
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => finish(reader.result);
-      reader.readAsDataURL(file);
-    } else finish(book.cover || '');
+      const statusEl = $('coverUploadStatus');
+      try {
+        if (!session?.user?.id) throw new Error('Please sign in before uploading a cover image.');
+        if (file.size > 5 * 1024 * 1024) throw new Error('Cover image must be 5 MB or smaller.');
+        if (!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)) throw new Error('Please choose a JPG, PNG, WebP, or GIF image.');
+        if (statusEl) statusEl.textContent = 'Uploading cover…';
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+        const bookId = book.id || crypto.randomUUID();
+        const objectPath = session.user.id + '/' + bookId + '-' + Date.now() + '.' + ext;
+        const upload = await bookshelfSupabase.storage.from('book-covers').upload(objectPath, file, {cacheControl:'3600', upsert:false, contentType:file.type});
+        if (upload.error) throw upload.error;
+        const publicResult = bookshelfSupabase.storage.from('book-covers').getPublicUrl(upload.data.path);
+        const publicUrl = publicResult?.data?.publicUrl;
+        if (!publicUrl) throw new Error('The cover uploaded, but its public URL could not be created.');
+        await finish(publicUrl);
+      } catch (err) {
+        console.error('Cover upload failed', err);
+        if (statusEl) statusEl.textContent = 'Upload failed: ' + (err.message || err);
+        alert('Cover upload failed: ' + (err.message || err));
+      }
+    } else {
+      await finish(typedCoverUrl || book.cover || '');
+    }
   };
 };
 </script><script src="xlsx-import.js"></script><script src="cover-loader.js"></script><script src="stats-fix.js"></script><script src="reading-stats-sections.js?v=20260918-1"></script>  <script src="cover-theme.js?v=forest-photo-20260818"></script><script src="ao3-screenshot-fix.js">/* BOOKS-TO-BUY-SHELL-JS */
