@@ -119,17 +119,17 @@
     #statsPanel>.panel h3,
     #statsPanel .stats-group-panel h3{font-family:Georgia,serif;color:#9e4d68;margin:0 0 12px}
 
-    /* BOOK-CARD-RESTORE-V1 — remove the extra green backing from bookshelf books */
+    /* BOOKSHELF-CARD-CLEAN-V2 — keep the forest page, but make book info cards neutral */
     #bookshelfPanel .book{
-      background:rgba(255,253,252,.93);
-      border-color:#efd5dd;
-      box-shadow:0 8px 22px rgba(180,93,122,.09);
+      background:rgba(255,253,252,.97);
+      border-color:rgba(93,113,78,.20);
+      box-shadow:0 8px 22px rgba(57,69,36,.10);
     }
-    #bookshelfPanel .cover{background:linear-gradient(145deg,#fde3eb,#f7e9ed)}
-    #bookshelfPanel .book-title{color:#9e4d68}
+    #bookshelfPanel .book-body{background:transparent}
+    #bookshelfPanel .book-title{color:#31583a}
     #bookshelfPanel .author,
-    #bookshelfPanel .meta{color:#8a717b}
-    #bookshelfPanel .chip{background:#fde3eb;color:#9d4c68}
+    #bookshelfPanel .meta{color:#62735c}
+    #bookshelfPanel .chip{background:#e3edca;color:#436239}
 
     .stats-pie-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
     .stats-pie{width:190px;height:190px;border-radius:50%;flex:0 0 190px}
@@ -142,7 +142,7 @@
       .stats-legend{max-height:none}
       #statsPanel{padding:15px}
       #statsPanel .reading-card,#statsPanel>.panel{background:rgba(255,253,252,.96)}
-      #bookshelfPanel .book{background:rgba(255,253,252,.93)}
+      #bookshelfPanel .book{background:rgba(255,253,252,.97)}
     }
   `;
   document.head.appendChild(style);
