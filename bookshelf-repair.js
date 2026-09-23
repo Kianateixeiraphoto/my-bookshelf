@@ -14,6 +14,8 @@
     const empty = 5 - full - (half ? 1 : 0);
     return '★'.repeat(full) + (half ? '⯨' : '') + '☆'.repeat(empty);
   };
+  const titleKey = book => String(book?.title || book?.name || '').trim().replace(/^(?:a|an|the)\s+/i, '').trim();
+  const alphabetize = items => [...items].sort((a, b) => titleKey(a).localeCompare(titleKey(b), undefined, { sensitivity: 'base', numeric: true }));
 
   function card(b = {}) {
     const tags = Array.isArray(b.tags) ? b.tags : (b.tags ? [b.tags] : []);
@@ -50,10 +52,10 @@
       });
 
       const sections = {
-        current: filtered.filter(b => CURRENT.has(norm(b))),
-        unread: filtered.filter(b => UNREAD.has(norm(b))),
-        read: filtered.filter(b => READ.has(norm(b))),
-        dnf: filtered.filter(b => DNF.has(norm(b)))
+        current: alphabetize(filtered.filter(b => CURRENT.has(norm(b)))),
+        unread: alphabetize(filtered.filter(b => UNREAD.has(norm(b)))),
+        read: alphabetize(filtered.filter(b => READ.has(norm(b)))),
+        dnf: alphabetize(filtered.filter(b => DNF.has(norm(b))))
       };
 
       const panel = document.getElementById('bookshelfPanel');
