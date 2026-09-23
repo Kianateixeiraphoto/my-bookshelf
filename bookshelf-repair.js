@@ -5,10 +5,14 @@
   const DNF = new Set(['dnf']);
   const UNREAD = new Set(['unread','want to read','to read','tbr','not started']);
 
-  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const stars = value => {
-    const n = Math.max(0, Math.min(5, Math.round(Number(value) || 0)));
-    return n ? '★'.repeat(n) + '☆'.repeat(5 - n) : '—';
+    const n = Math.max(0, Math.min(5, Math.round((Number(value) || 0) * 2) / 2));
+    if (!n) return '—';
+    const full = Math.floor(n);
+    const half = n % 1 >= .5;
+    const empty = 5 - full - (half ? 1 : 0);
+    return '★'.repeat(full) + (half ? '⯨' : '') + '☆'.repeat(empty);
   };
 
   function card(b = {}) {
