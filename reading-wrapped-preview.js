@@ -95,6 +95,6 @@
     renderWrapped();
   },true);
   // Hide Wrapped when navigating to any existing tab (including the wishlist's capture handler).
-  document.querySelectorAll('#nav .tab:not([data-tab="wrapped"])').forEach(t=>t.addEventListener('click',()=>{panel.style.display='none'},true));
+  document.addEventListener('click', event => { if (event.target.closest('#nav .tab:not([data-tab="wrapped"])')) panel.style.display='none'; }, true);
   window.renderReadingWrappedPreview=renderWrapped;
 })();
