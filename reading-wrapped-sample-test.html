@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reading Wrapped — Sample Data Test</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px;background:linear-gradient(145deg,#102c22,#244b36);font:16px system-ui,sans-serif;color:#fff8e8;min-height:100vh}
+.shell{max-width:1150px;margin:auto}.notice{background:#fff4cc;color:#4b3817;border:2px solid #c5a45d;padding:16px 20px;border-radius:15px;margin-bottom:20px;line-height:1.6}
+.notice strong{display:block;font-size:19px}.tab{background:#dfc37e;color:#193e2d;border:0;border-radius:30px;padding:12px 20px;font-weight:bold;cursor:pointer;margin-bottom:20px}
+#wrappedPanel .wrap-toolbar label,#wrappedPanel .wrap-toolbar .wrap-note{color:#fff4d4!important}#wrappedPanel>p.wrap-note{color:#f2e9ce!important}
+.checks{background:#fdf8ec;color:#193e2d;border-radius:15px;padding:18px 22px;margin:20px 0}.checks h3{margin-top:0}.checks li{margin:6px 0}
+</style></head><body><div class="shell">
+<div class="notice"><strong>🧪 SAMPLE DATA ONLY — SAFE TEST PAGE</strong>This is NOT your real bookshelf. It uses six made-up books in memory, with no login, no Supabase, no local storage, and no sync. This test page cannot change your real collection.</div>
+<nav id="nav"><button type="button" class="tab" data-tab="wrapped">🌿 Reading Wrapped</button></nav>
+<main id="wrappedPanel"></main>
+<section class="checks"><h3>What you should see</h3><ul>
+<li>For <b>2026</b>: <b>3 books finished</b>, <b>1,050 pages</b>, <b>4.5 ★</b> average rating, and <b>Enemies to Lovers</b> as the most common tag.</li>
+<li>Monthly reading: January = 1, March = 1, October = 1.</li>
+<li>For <b>2025</b>: <b>1 book finished</b>, <b>250 pages</b>, <b>5.0 ★</b>.</li>
+<li>One finished book with no date is excluded from yearly totals. One currently-reading book is excluded.</li>
+</ul><p>Try switching between <b>2026</b> and <b>2025</b> using the year selector.</p></section>
+</div>
+<script>
+const state={books:[
+{id:"sample1",title:"Moonlit Rivalry",author:"A. Rowan",status:"Read",dateFinished:"2026-01-12",pages:300,rating:5,tags:["Enemies to Lovers","Slow Burn"]},
+{id:"sample2",title:"The Gilded Forest",author:"B. Vale",status:"Finished",dateFinished:"2026-03-18",pages:400,rating:4,tags:["Enemies to Lovers","Fantasy"]},
+{id:"sample3",title:"A Thousand Letters",author:"A. Rowan",status:"Complete",dateFinished:"2026-10-02",pages:350,rating:4.5,tags:["Found Family","Slow Burn"]},
+{id:"sample4",title:"Last Year's Stars",author:"C. Wren",status:"Read",dateFinished:"2025-08-05",pages:250,rating:5,tags:["Cozy"]},
+{id:"sample5",title:"Undated Adventure",author:"D. Finch",status:"Read",dateFinished:"",pages:500,rating:5,tags:["Mystery"]},
+{id:"sample6",title:"The Book in Progress",author:"E. Moss",status:"Currently Reading",dateFinished:"",pages:200,rating:0,tags:["Fantasy"]}
+]};
+</script>
+<script src="reading-wrapped-preview.js?v=sample-test-1"></script>
+<script>document.querySelector('[data-tab="wrapped"]').click();</script>
+</body></html>
