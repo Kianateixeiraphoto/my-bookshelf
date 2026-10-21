@@ -51,6 +51,21 @@
 .tag-option input{width:14px;height:14px;margin:0;accent-color:var(--accent)}
 .tag-option:has(input:checked){background:#fde3ed;border-color:#e99ab5;color:#8a4d67;font-weight:600}
 @media(max-width:700px){.tag-sections{grid-template-columns:1fr}.tag-picker-head{align-items:flex-start}.tag-option{font-size:10.5px}}
+/* TAG-ACCORDION */
+.tag-picker-head{flex-wrap:wrap}
+.tag-picker-actions{display:flex;flex-wrap:wrap;gap:5px}
+.tag-picker-actions .btn{padding:6px 9px;font-size:11px}
+.tag-sections{display:flex;flex-direction:column;max-height:none;overflow:visible;gap:8px}
+.tag-section{padding:0;overflow:hidden}
+.tag-section summary{cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px;font-family:Georgia,serif;font-size:14px;font-weight:bold;color:var(--text);list-style:none}
+.tag-section summary::-webkit-details-marker{display:none}
+.tag-section summary:before{content:'▸';color:var(--accent)}
+.tag-section[open] summary:before{content:'▾'}
+.tag-section summary span{flex:1}
+.tag-section summary small{font-family:system-ui,sans-serif;font-size:11px;font-weight:normal;color:var(--muted)}
+.tag-section .tag-options{padding:0 12px 12px}
+.tag-legacy .status{padding:0 12px 12px}
+.legacy-pill{cursor:default}
 /* BOOKS-TO-BUY-SHELL */
 .buy-shell{background:rgba(255,253,253,.86);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--shadow)}
 .buy-empty{min-height:330px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:35px;color:var(--muted)}
@@ -312,14 +327,12 @@ loadLocal();render();(async()=>{await restoreSession();if(session)await cloudLoa
 </script><script>
 /* EDIT-BOOK-FULL-UI: restored detailed book editor */
 window.addBook = function(book = {}) {
-  const tags = Array.isArray(book.tags) ? book.tags.map(t=>({MM:'M/M',MF:'M/F',FF:'F/F'}[t]||t)).filter(t=>!['gay','lesbian','bisexual','pansexual','queer','asexual','demisexual','questioning'].includes(String(t).trim().toLowerCase())) : [];
-  const tagChoices = [
-    'Enemies to Lovers','Friends to Lovers','Friends with Benefits','Fake Dating','Forced Proximity',
-    'Only One Bed','Grumpy x Sunshine','Found Family','Second Chance','Forbidden Romance','Age Gap',
-    'Dark Romance','Possessive','Jealousy','Betrayal','Hurt/Comfort','Slow Burn','High Angst',
-    'Fluff','Spicy','HEA','Shifters','Vampires','Omegaverse','Mpreg','Poly','Sports Romance'
-  ];
-  const selectedTags = tagChoices.map(t => `<option value="${esc(t)}" ${tags.includes(t) ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  const tagGroups = {"Relationship Pairing":["M/M","M/F","F/F","M/M/F","M/F/F","Other"],"Romance Tropes":["Enemies to Lovers","Friends to Lovers","Rivals to Lovers","Strangers to Lovers","Second Chance","Fake Dating","Marriage of Convenience","Forced Proximity","Only One Bed","Grumpy x Sunshine","Found Family","Forbidden Romance","Opposites Attract","Workplace Romance","Small Town Romance","Sports Romance","College Romance","Friends with Benefits","One Night Stand","Unrequited Love","Slow Burn","Love at First Sight","Accidental Dating","Dating for a Bet / Dare","Childhood Friends to Lovers","Roommates to Lovers","Emotional Angst"],"Relationship Dynamics":["Possessive","Protective","Jealousy","Obsessive Love","Groveling","Chasing / Pursuit","Betrayal","Hurt / Comfort","Mutual Pining","Secret Relationship","Established Relationship","Codependency","Power Imbalance","Touch Them and Die","Age Gap","Size Difference"],"Relationship Structure":["Why Choose","Polyamory","Reverse Harem","Open Relationship"],"Spice Level":["No Spice / Closed Door","Low Spice","Moderate Spice","High Spice","Extremely Spicy"],"Kinks & Sexual Dynamics":["Dom/Sub","BDSM","Praise Kink","Degradation Kink","Breeding Kink","Primal Play","Marking","Biting","Bondage","Exhibitionism","Voyeurism","Somnophilia","Dubious Consent","Non-Consent","Sexual Awakening","Virgin / Experienced","Sexual Tension"],"Mood & Vibes":["Sweet","Cozy","Fluffy","Funny","Angsty","Emotional","Dark","Morally Gray","Heartwarming","Tearjerker","Suspenseful","Wholesome","Chaotic","Intense","Comfort Read"],"Creatures & Supernatural Beings":["Vampires","Werewolves","Shifters","Fae","Witches","Demons","Angels","Monsters","Dragons","Ghosts / Spirits","Mermaids / Sirens","Aliens","Gods / Deities"],"Fantasy & Worldbuilding":["Omegaverse","Mpreg","Magic","Supernatural","Soulmates","Royalty","Court Politics","Academy / Magic School","Curses","Prophecies","Alternate Worlds","Time Travel","Post-Apocalyptic","Urban Fantasy"],"Genres & Subgenres":["Romance","Dark Romance","Romantic Comedy","Fantasy Romance","Romantasy","Paranormal Romance","Sci-Fi Romance","Romantic Suspense","Mystery","Thriller","Horror","Fantasy","Science Fiction","Contemporary Fiction","Young Adult","LGBTQ+ Romance"],"Settings & Story Worlds":["College / University","High School","Academia","Workplace","Small Town","Big City","Sports / Athletics","Hockey","Football","Baseball","Mafia / Organized Crime","Billionaire / Wealthy Elite","Royal Court","Military","Law Enforcement","Cowboys / Ranch","Road Trip","Summer Camp","Boarding School","Medical / Hospital","Entertainment Industry","Gaming / Esports","Post-Apocalyptic World"],"Content Warnings — Sexual Content & Consent":["Non-Consensual Sexual Activity","Dubious Consent","Sexual Assault / Rape","Sexual Harassment","Sexual Coercion","Sexual Exploitation"],"Content Warnings — Violence & Abuse":["Graphic Violence","Physical Abuse","Emotional / Psychological Abuse","Domestic Violence","Child Abuse","Torture","Kidnapping / Captivity","Stalking","Murder / Death"],"Content Warnings — Mental Health & Trauma":["Depression","Anxiety / Panic Attacks","Suicidal Ideation","Suicide / Suicide Attempt","Self-Harm","Eating Disorders","Addiction / Substance Abuse","PTSD / Trauma","Grief / Loss","Medical Trauma"],"Content Warnings — Relationship & Other Sensitive Themes":["Cheating / Infidelity","Love Triangle","Manipulation / Gaslighting","Toxic Relationship","Abandonment","Pregnancy Loss / Miscarriage","Infertility","Unplanned Pregnancy","Homophobia / Queerphobia","Racism / Discrimination","Bullying","Religious Trauma"]};
+  const tagAliases = {"MM":"M/M","MF":"M/F","FF":"F/F","M/F/M":"M/M/F","Forbidden Love":"Forbidden Romance","Poly":"Polyamory","College":"College / University","Mafia":"Mafia / Organized Crime","Billionaire":"Billionaire / Wealthy Elite","Hurt/Comfort":"Hurt / Comfort","Touch Her/Him and Die":"Touch Them and Die","RomCom":"Romantic Comedy","Cowboys":"Cowboys / Ranch"};
+  const tagValues = new Set(Object.values(tagGroups).flat());
+  const originalTags = Array.isArray(book.tags) ? book.tags : [];
+  const tags = [...new Set(originalTags.map(t => tagAliases[t] || t).filter(t => !['gay','lesbian','bisexual','pansexual','queer','asexual','demisexual','questioning'].includes(String(t).toLowerCase())))];
+  const legacyTags = tags.filter(t => !tagValues.has(t));
   const coverPreview = book.cover ? `<img src="${esc(book.cover)}" alt="Current cover" style="width:74px;height:105px;object-fit:cover;border-radius:8px;border:1px solid var(--line)">` : '<div style="width:74px;height:105px;border-radius:8px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:30px">📖</div>';
   const rating = book.rating ? String(book.rating) : '';
   const status = book.status || 'Read';
@@ -360,22 +373,13 @@ window.addBook = function(book = {}) {
           </div>
         </div>
       </div>
-      <div class="wide tag-picker" id="bookTags" data-tag-sections-v2="true">
-          <div class="tag-picker-head">
-            <div><b>Tags / tropes</b><div class="status">Pick anything that applies — no Ctrl/Cmd required. You can select as many as you want.</div></div>
-            <button class="btn" type="button" id="clearBookTags" style="padding:6px 10px;font-size:11px">Clear all</button>
-          </div>
-          <div class="tag-sections">
-            ${Object.entries({
-              'Relationship pairing': ['M/M','M/F','F/F','Other'],
-              'Romance Tropes': ['Enemies to Lovers','Friends to Lovers','Friends with Benefits','Fake Dating','Forced Proximity','Only One Bed','Grumpy x Sunshine','Found Family','Second Chance','Forbidden Romance','Age Gap','Forbidden Love','Opposites Attract','Workplace Romance','Small Town Romance','Sports Romance','College Romance'],
-              'Relationship / Dynamic': ['Possessive','Jealousy','Betrayal','Hurt/Comfort','Slow Burn','High Angst','Fluff','HEA','Happy for Now','Open Relationship','Established Relationship','Secret Relationship','Mutual Pining','Only One Bed'],
-              'Spice / Vibes': ['Sweet','Spicy','Very Spicy','Dark Romance','Dark','Cozy','Angsty','Emotional','Funny','Protective','Morally Gray','Touch Her/Him and Die'],
-              'Fantasy / Paranormal': ['Shifters','Vampires','Werewolves','Omegaverse','Mpreg','Witches','Fae','Demons','Monsters','Magic','Supernatural'],
-              'Genre / Setting': ['Contemporary','Historical','Fantasy','Paranormal','Sci-Fi','RomCom','Mystery','Thriller','Horror','Mafia','Billionaire','Military','Law Enforcement','Cowboys','Academia','High School','College','Workplace','Small Town','Road Trip']
-            }).map(([section, options]) => `<section class="tag-section"><h4>${esc(section)}</h4><div class="tag-options">${options.map(t => `<label class="tag-option"><input type="checkbox" value="${esc(t)}" ${tags.includes(t) ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}</div></section>`).join('')}
-          </div>
+      <div class="wide tag-picker" id="bookTags">
+        <div class="tag-picker-head"><div><b>Tags / tropes</b><div class="status">Expand a category to select tags. Collapsing never changes your selections.</div></div><div class="tag-picker-actions"><button class="btn" type="button" id="expandBookTags">Expand all</button><button class="btn" type="button" id="collapseBookTags">Collapse all</button><button class="btn" type="button" id="clearBookTags">Clear selected</button></div></div>
+        <div class="tag-sections">
+          ${Object.entries(tagGroups).map(([section, options]) => `<details class="tag-section"><summary><span>${esc(section)}</span><small class="tag-count">0 selected</small></summary><div class="tag-options">${options.map(t => `<label class="tag-option"><input type="checkbox" value="${esc(t)}" data-group="${esc(section)}" ${tags.includes(t) ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}</div></details>`).join('')}
+          ${legacyTags.length ? `<details class="tag-section tag-legacy"><summary><span>Legacy / Custom Tags</span><small>${legacyTags.length} preserved</small></summary><div class="tag-options">${legacyTags.map(t => `<span class="tag-option legacy-pill">${esc(t)}</span>`).join('')}</div><p class="status">Read-only; preserved when you save.</p></details>` : ''}
         </div>
+      </div>
       <label class="wide">Notes / review<textarea name="notes" rows="6" placeholder="Your thoughts, review, quotes, reminders…">${esc(book.notes || '')}</textarea></label>
       <div class="wide actions" style="justify-content:flex-end"><button class="btn" type="button" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Save Book</button></div>
     </form>`);
@@ -388,13 +392,29 @@ window.addBook = function(book = {}) {
   };
   statusSelect?.addEventListener('change',updateStatusFields); updateStatusFields();
 
+  const tagPicker = document.getElementById('bookTags');
+  const tagBoxes = [...tagPicker.querySelectorAll('input[type="checkbox"]')];
+  const updateTagCounts = () => tagPicker.querySelectorAll('details.tag-section').forEach(section => {
+    const count = section.querySelectorAll('input:checked').length;
+    const label = section.querySelector('.tag-count');
+    if (label) label.textContent = count + ' selected';
+  });
+  tagBoxes.forEach(input => input.addEventListener('change', () => {
+    if (input.checked && input.dataset.group === 'Spice Level') tagBoxes.filter(other => other !== input && other.dataset.group === 'Spice Level').forEach(other => {other.checked = false;});
+    tagBoxes.filter(other => other !== input && other.value === input.value).forEach(other => {other.checked = input.checked;});
+    updateTagCounts();
+  }));
+  document.getElementById('expandBookTags').addEventListener('click', () => tagPicker.querySelectorAll('details').forEach(d => {d.open = true;}));
+  document.getElementById('collapseBookTags').addEventListener('click', () => tagPicker.querySelectorAll('details').forEach(d => {d.open = false;}));
+  document.getElementById('clearBookTags').addEventListener('click', () => {tagBoxes.forEach(input => {input.checked = false;});updateTagCounts();});
+  updateTagCounts();
   $('bookForm').onsubmit = async e => {
     e.preventDefault();
     const form = e.target;
     const x = Object.fromEntries(new FormData(form).entries());
-    const selected = Array.from(document.querySelectorAll('#bookTags input[type=\"checkbox\"]:checked')).map(o => o.value);
+    const selected = [...new Set(tagBoxes.filter(input => input.checked).map(input => input.value))];
     const finish = async cover => {
-      const obj = {...book, id: book.id || crypto.randomUUID(), title:x.title.trim(), author:x.author.trim(), status:x.status, rating:Number(x.rating||0), series:x.series.trim(), bookNumber:x.bookNumber.trim(), pages:Number(x.pages||0), price:x.price.trim(), buyPriority:x.buyPriority, spice:x.spice, dateStarted:x.dateStarted, dateFinished:x.dateFinished, currentPage:Number(x.currentPage||0), dnfDate:x.dnfDate||'', dnfPage:Number(x.dnfPage||0), dnfReason:x.dnfReason||'', cover:cover || book.cover || '', tags:selected.filter(t=>!['gay','lesbian','bisexual','pansexual','queer','asexual','demisexual','questioning'].includes(String(t).toLowerCase())), notes:x.notes, _updatedAt:new Date().toISOString()};
+      const obj = {...book, id: book.id || crypto.randomUUID(), title:x.title.trim(), author:x.author.trim(), status:x.status, rating:Number(x.rating||0), series:x.series.trim(), bookNumber:x.bookNumber.trim(), pages:Number(x.pages||0), price:x.price.trim(), buyPriority:x.buyPriority, spice:x.spice, dateStarted:x.dateStarted, dateFinished:x.dateFinished, currentPage:Number(x.currentPage||0), dnfDate:x.dnfDate||'', dnfPage:Number(x.dnfPage||0), dnfReason:x.dnfReason||'', cover:cover || book.cover || '', tags:[...new Set([...selected, ...legacyTags])], notes:x.notes, _updatedAt:new Date().toISOString()};
       if (book.id) state.books = state.books.map(b => b.id === book.id ? obj : b); else state.books.push(obj);
       saveLocal(); render(); try{await sync(); closeModal()}catch(err){console.error('Book save is local only until cloud sync succeeds',err)}
     };
