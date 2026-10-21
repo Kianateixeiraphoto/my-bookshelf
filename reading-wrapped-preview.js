@@ -36,6 +36,8 @@
     .wrap-hero h2{font-family:Georgia,serif;font-size:clamp(29px,5vw,45px);margin:10px 0;color:#fff8e8}
     .wrap-hero p{color:#efe5c9;margin:0}
     .wrap-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0}
+    .wrap-toolbar label{color:#fff5d9;font-weight:700;text-shadow:0 1px 3px #102b20}
+    .wrap-toolbar .wrap-note{color:#f6ecd0;text-shadow:0 1px 3px #102b20;margin:0}
     .wrap-toolbar select{border-radius:12px;padding:10px 14px;border:1px solid #9baf97;background:#fffdf5;color:#173e2c}
     .wrap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
     .wrap-stat,.wrap-section{background:#fffdf5;border:1px solid #d9d0ad;border-radius:17px;padding:20px;box-shadow:0 6px 20px #193e2d0d}
@@ -48,11 +50,13 @@
     .wrap-line span{overflow-wrap:anywhere}
     .wrap-line b{color:#836a36;white-space:nowrap}
     .wrap-months{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));align-items:end;gap:7px;height:150px}
-    .wrap-month{display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%;gap:5px;font-size:11px;color:#4b6752}
+    .wrap-month{display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%;gap:5px;font-size:12px;color:#315b40;font-weight:600}
     .wrap-bar{background:linear-gradient(#bca05e,#416b4d);border-radius:5px 5px 0 0;width:100%;min-height:2px}
-    .wrap-note{margin:16px 0;color:#667260;font-size:13px}
+    .wrap-note{margin:16px 0;color:#566c59;font-size:13px;line-height:1.55}
+    #wrappedPanel > .wrap-note{color:#fff3d3;text-shadow:0 1px 4px #102b20;font-weight:500}
+    .wrap-month b{font-size:11px;color:#244833}
     @media(max-width:780px){.wrap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap-sections{grid-template-columns:1fr}}
-    @media(max-width:430px){.wrap-hero{padding:22px}.wrap-stat{padding:14px}.wrap-stat strong{font-size:25px}}
+    @media(max-width:430px){.wrap-hero{padding:22px}.wrap-stat{padding:14px}.wrap-stat strong{font-size:25px}.wrap-grid{gap:9px}.wrap-sections{gap:11px}.wrap-section{padding:15px}.wrap-months{gap:3px;height:125px}.wrap-month{font-size:10px}.wrap-toolbar{gap:8px}}
   `;
   document.head.appendChild(css);
   let selectedYear = new Date().getFullYear();
