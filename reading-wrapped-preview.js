@@ -73,7 +73,9 @@
     const ratings = books.map(b=>Number(b.rating)).filter(v=>Number.isFinite(v)&&v>0&&v<=5);
     const pages = books.reduce((n,b)=>n+(Number.isFinite(Number(b.pages))?Math.max(0,Number(b.pages)):0),0);
     const authors = count(books,b=>b.author);
-    const tags = count(books,b=>Array.isArray(b.tags)?[...new Set(b.tags.map(clean).filter(Boolean))]:[]);
+    // Pairings and legacy orientation labels are not reading tropes.
+    const excluded = new Set(['gay','lesbian','bisexual','pansexual','queer','asexual','demisexual','questioning','mm','mf','ff','m/m','m/f','f/f','other','poly','why choose','reverse harem']);
+    const tags = count(books,b=>Array.isArray(b.tags)?[...new Set(b.tags.map(clean).filter(t=>t&&!excluded.has(t.toLowerCase())))]:[]);
     const months = Array(12).fill(0);
     yearBooks.forEach(x=>months[x.date.month]++);
     const max = Math.max(1,...months);
