@@ -450,4 +450,33 @@ window.addBook = function(book = {}) {
 (function(){const buyTab=document.querySelector('[data-tab="buy"]'),buyPanel=document.getElementById('buyPanel');if(!buyTab||!buyPanel)return;const tabs=[...document.querySelectorAll('#nav .tab')];const panels={bookshelf:document.getElementById('bookshelfPanel'),stats:document.getElementById('statsPanel'),fanfiction:document.getElementById('fanfictionPanel'),buy:buyPanel};buyTab.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();tabs.forEach(t=>t.classList.toggle('active',t===buyTab));Object.entries(panels).forEach(([key,p])=>{if(p)p.style.display=key==='buy'?'block':'none'});},true);document.getElementById('addBuyBookBtn')?.addEventListener('click',function(){const card=document.getElementById('modalCard'),modal=document.getElementById('modal');if(!card||!modal)return;card.innerHTML='<div class="row"><h2>🛍️ Add a Book</h2><button class="btn" type="button" id="closeBuyShellModal">Cancel</button></div><div class="empty" style="padding:28px 10px">The new book lookup and cover system is coming in the next step. ✨</div>';modal.classList.add('show');document.getElementById('closeBuyShellModal')?.addEventListener('click',()=>modal.classList.remove('show'));});})();
 </script>
 <script src="reading-wrapped-preview.js?v=20261021-pairing-fix2"></script>
+<script>
+/* NAVIGATION-UNIFIED-20261023: one tab controller for all existing panels. */
+(() => {
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+  const panelIds = ['bookshelf', 'stats', 'wrapped', 'fanfiction', 'buy'];
+  const panels = Object.fromEntries(panelIds.map(key => [key, document.getElementById(key + 'Panel')]));
+  nav.addEventListener('click', event => {
+    const tab = event.target.closest('button.tab[data-tab]');
+    if (!tab || !nav.contains(tab) || !panels[tab.dataset.tab]) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const selected = tab.dataset.tab;
+    nav.querySelectorAll('button.tab[data-tab]').forEach(button => {
+      const active = button.dataset.tab === selected;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+    for (const [key, panel] of Object.entries(panels)) {
+      if (panel) panel.style.display = key === selected ? 'block' : 'none';
+    }
+    if (selected === 'wrapped' && typeof window.renderReadingWrappedPreview === 'function') {
+      window.renderReadingWrappedPreview();
+    }
+    if (selected === 'stats' && typeof window.renderStats === 'function') window.renderStats();
+  }, true);
+})();
+</script>
+
 </body></html>
