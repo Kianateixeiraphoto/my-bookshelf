@@ -36,6 +36,8 @@
     panel.querySelector('#dnaGenre').addEventListener('change',e=>{genre=e.target.value;render()});
     panel.querySelector('#dnaMetric').addEventListener('change',e=>{metric=e.target.value;render()});
   }
+  // Read-only view for companion features; uses the same library and filters as the charts.
+  window.getRomanceDNASnapshot=()=>({books:library(),mode,genre});
   window.renderRomanceDNA=render;
   document.getElementById('nav')?.addEventListener('click',e=>{if(e.target.closest('[data-tab="romanceDna"]'))render()});
 })();
