@@ -30,14 +30,14 @@ const wish=b=>['want to read','unread','to read','tbr'].includes(String(b.status
 const themes={botanical:{bg:'#eae4cf',fg:'#234b37',accent:'#66815e'},midnight:{bg:'#132d25',fg:'#f3e6cc',accent:'#ba9d65'},parchment:{bg:'#f8ebd2',fg:'#61452e',accent:'#b59a72'}};
 let theme='midnight';
 function getData(panel){
- let all=[];try{all=Array.isArray(state.books)?state.books:[]}catch(e){}
- const mode=panel.querySelector('[data-dna-mode].selected')?.dataset.dnaMode||'reading';
- const genre=panel.querySelector('#dnaGenre')?.value||'all';
+ const snapshot=typeof window.getRomanceDNASnapshot==='function'?window.getRomanceDNASnapshot():{books:[],mode:'reading',genre:'all'};
+ const all=snapshot.books,mode=snapshot.mode,genre=snapshot.genre;
  const books=all.filter(b=>(mode==='reading'?read(b):wish(b))&&(genre==='all'||tags(b).includes(genre)));
  const archetype=panel.querySelector('.dna-archetype h4')?.textContent?.trim()||'The Unwritten Chapter';
  const quip=panel.querySelector('.dna-archetype p')?.textContent?.replace(/[“”]/g,'').trim()||'Your story is still being written.';
  const counts=new Map();books.forEach(b=>tags(b).forEach(t=>counts.set(t,(counts.get(t)||0)+1)));
- const top=[...counts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,3).map(x=>x[0]);
+ const romanceTraits=['Enemies to Lovers','Friends to Lovers','Rivals to Lovers','Second Chance','Forbidden Romance','Slow Burn','Forced Proximity','Groveling','Chasing / Pursuit','Possessive','Protective','Jealousy','Obsessive Love','Touch Them and Die','Mutual Pining','Hurt / Comfort','Power Imbalance','Grumpy x Sunshine','Opposites Attract','Secret Relationship','Betrayal','Fake Dating','Sports Romance','Dark Romance','BDSM','Breeding Kink','Sexual Tension'];
+ const top=[...counts].filter(([t])=>romanceTraits.includes(t)).sort((a,b)=>b[1]-a[1]||romanceTraits.indexOf(a[0])-romanceTraits.indexOf(b[0])).slice(0,3).map(x=>x[0]);
  const pair=['M/M','M/F','F/F','M/M/F','M/F/F'].map(t=>[t,counts.get(t)||0]).sort((a,b)=>b[1]-a[1])[0];
  return {mode,genre,books,archetype,quip,top,pair:pair&&pair[1]?pair[0]:'Not yet known'};
 }
@@ -53,7 +53,7 @@ function render(){
 }
 function exportCard(d){
  const t=themes[theme],canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1250;
- const ctx=canvas.getContext('2d');if(!ctx)return;
+ const ctx=canvas.getContext('2d');if(!ctx){alert('Your browser could not create the image. Please try another browser.');return;}
  ctx.fillStyle=t.bg;ctx.fillRect(0,0,1000,1250);
  ctx.strokeStyle=t.accent;ctx.lineWidth=8;ctx.strokeRect(35,35,930,1180);ctx.lineWidth=2;ctx.strokeRect(52,52,896,1146);
  ctx.textAlign='center';ctx.fillStyle=t.accent;ctx.font='44px Georgia';ctx.fillText('✦   ☾   ✦',500,170);
