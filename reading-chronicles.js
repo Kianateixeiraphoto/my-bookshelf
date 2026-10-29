@@ -32,6 +32,27 @@ css.textContent=`
 #chroniclesPanel .wrap-bar{background:linear-gradient(#c87d9a,#3d7056)}
 #chroniclesPanel .wrap-line b{color:#995b73}
 #chroniclesPanel .chron-note{color:#e4d2b5;font-size:12px;margin:18px 0}
+
+/* Forest Library After Dark: match Romance DNA's emerald, parchment and gold palette. */
+#chroniclesPanel{background:linear-gradient(150deg,#10251f,#234436 58%,#142b25);border-color:#7a7653;box-shadow:0 15px 40px #10281d40}
+#chroniclesPanel .chron-hero{background:radial-gradient(ellipse at top,#3a5743 0%,transparent 70%);border-bottom-color:#8f865966}
+#chroniclesPanel .chron-hero small,#chroniclesPanel .chron-block>h3{color:#d8bf87}
+#chroniclesPanel .chron-hero h2{color:#f3e5c6}
+#chroniclesPanel .chron-hero p{color:#d6decf}
+#chroniclesPanel .chron-toolbar select{background:#274737;color:#f3e7ce;border-color:#a99a70}
+#chroniclesPanel .reading-card,#chroniclesPanel .wrap-stat{background:#294639;color:#f2e7d1;border-color:#9b926b88;box-shadow:none}
+#chroniclesPanel .reading-card b,#chroniclesPanel .wrap-stat strong{color:#e3c992}
+#chroniclesPanel .reading-card span,#chroniclesPanel .wrap-stat span{color:#d8dfd0}
+#chroniclesPanel .panel,#chroniclesPanel .wrap-section{background:#f3e8d4;color:#30493b;border-color:#d2c39f}
+#chroniclesPanel .panel h3,#chroniclesPanel .wrap-section h3{color:#284637}
+#chroniclesPanel .panel h3,#chroniclesPanel .wrap-section h3{background:#fff9ef;border-color:#c9b68b;box-shadow:none}
+#chroniclesPanel .wrap-stat strong,#chroniclesPanel .wrap-line b{color:#e3c992}
+#chroniclesPanel .wrap-bar{background:linear-gradient(90deg,#385d47,#a07e87)}
+#chroniclesPanel .stats-month-bar,#chroniclesPanel .stats-bar-fill,#chroniclesPanel .stats-tag-fill{background:#53745b!important}
+#chroniclesPanel .calendar-day{background:#fffaf0;border-color:#d7c9a8}
+#chroniclesPanel .calendar-day>b{color:#526d51}
+#chroniclesPanel .chron-note{color:#d8dfd0}
+
 @media(max-width:760px){#chroniclesPanel .chron-cards,#chroniclesPanel .stats-feature-grid{grid-template-columns:1fr!important}}\n@media(max-width:580px){#chroniclesPanel .chron-cards{grid-template-columns:1fr}#chroniclesPanel .reading-calendar{gap:2px}#chroniclesPanel .calendar-day{min-height:58px;padding:3px}#chroniclesPanel .calendar-covers img{width:22px;height:30px}}
 `;
 document.head.appendChild(css);
