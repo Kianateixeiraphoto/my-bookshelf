@@ -20,7 +20,7 @@ css.textContent=`
 #chroniclesPanel .reading-card,#chroniclesPanel .wrap-stat{background:#f6ead9;color:#315342;border:1px solid #d7b7a4;border-radius:14px;padding:18px;box-shadow:0 5px 16px #091d181f}
 #chroniclesPanel .reading-card b,#chroniclesPanel .wrap-stat strong{font:700 30px Georgia,serif;color:#9c5b72;display:block}
 #chroniclesPanel .reading-card span,#chroniclesPanel .wrap-stat span{color:#52675a;font-size:13px}
-#chroniclesPanel .chron-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px}
+#chroniclesPanel .chron-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}\n#chroniclesPanel .chron-cards>.panel,#chroniclesPanel .chron-cards>.wrap-section{width:100%;min-width:0;height:auto;min-height:300px}\n#chroniclesPanel .stats-book-strip{overflow-x:auto;max-width:100%}\n#chroniclesPanel .stats-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}\n#chroniclesPanel .stats-feature-grid>.panel{min-width:0}\n#chroniclesPanel .stats-calendar-full{grid-column:1/-1}\n#chroniclesPanel .stats-month-bars{min-height:170px}
 #chroniclesPanel .panel,#chroniclesPanel .wrap-section{margin:0!important;background:#f6ead9;color:#2c4a39;border:1px solid #cdb9a0;border-radius:16px;padding:20px;min-width:0}
 #chroniclesPanel .panel h3,#chroniclesPanel .wrap-section h3{font:normal 23px Georgia,serif;color:#315342;margin:0 0 13px}
 #chroniclesPanel .stats-legend-row{color:#315342}
@@ -32,7 +32,7 @@ css.textContent=`
 #chroniclesPanel .wrap-bar{background:linear-gradient(#c87d9a,#3d7056)}
 #chroniclesPanel .wrap-line b{color:#995b73}
 #chroniclesPanel .chron-note{color:#e4d2b5;font-size:12px;margin:18px 0}
-@media(max-width:580px){#chroniclesPanel .chron-cards{grid-template-columns:1fr}#chroniclesPanel .reading-calendar{gap:2px}#chroniclesPanel .calendar-day{min-height:58px;padding:3px}#chroniclesPanel .calendar-covers img{width:22px;height:30px}}
+@media(max-width:760px){#chroniclesPanel .chron-cards,#chroniclesPanel .stats-feature-grid{grid-template-columns:1fr}}\n@media(max-width:580px){#chroniclesPanel .chron-cards{grid-template-columns:1fr}#chroniclesPanel .reading-calendar{gap:2px}#chroniclesPanel .calendar-day{min-height:58px;padding:3px}#chroniclesPanel .calendar-covers img{width:22px;height:30px}}
 `;
 document.head.appendChild(css);
 function clone(node){return node?node.cloneNode(true):null}
