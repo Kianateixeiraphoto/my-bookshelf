@@ -8,7 +8,7 @@ let selectedYear=new Date().getFullYear();
 const css=document.createElement('style');
 css.textContent=`
 #chroniclesPanel{background:linear-gradient(155deg,#12392d,#1d4837);border:1px solid #b49c6a;border-radius:20px;padding:clamp(14px,3vw,28px);color:#f4e9d7}
-#chroniclesPanel .chron-hero{text-align:center;padding:30px 16px;border-bottom:1px solid #aa946c}
+#chroniclesPanel .chron-hero{text-align:center;padding:36px 16px 42px;border-bottom:1px solid #aa946c;background:radial-gradient(ellipse at 50% 5%,rgba(102,132,101,.48) 0%,rgba(67,105,83,.24) 38%,transparent 75%);border-radius:18px 18px 0 0}
 #chroniclesPanel .chron-hero small{letter-spacing:.2em;color:#d9b77c}
 #chroniclesPanel .chron-hero h2{font:normal clamp(34px,5vw,50px) Georgia,serif;color:#f5e7cb;margin:12px 0}
 #chroniclesPanel .chron-hero p{font-style:italic;color:#e5d3bc}
