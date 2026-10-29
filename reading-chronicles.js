@@ -46,7 +46,7 @@ css.textContent=`
 #chroniclesPanel .panel,#chroniclesPanel .wrap-section{background:#f3e8d4;color:#30493b;border-color:#d2c39f}
 #chroniclesPanel .panel h3,#chroniclesPanel .wrap-section h3{color:#284637}
 #chroniclesPanel .panel h3,#chroniclesPanel .wrap-section h3{background:#fff9ef;border-color:#c9b68b;box-shadow:none}
-#chroniclesPanel .wrap-stat strong,#chroniclesPanel .wrap-line b{color:#e3c992}
+#chroniclesPanel .wrap-stat strong{color:#e3c992}\n#chroniclesPanel .wrap-section .wrap-line b,#chroniclesPanel .wrap-section .wrap-line strong{color:#2e5947!important;font-weight:700}
 #chroniclesPanel .wrap-bar{background:linear-gradient(90deg,#385d47,#a07e87)}
 #chroniclesPanel .stats-month-bar,#chroniclesPanel .stats-bar-fill,#chroniclesPanel .stats-tag-fill{background:#53745b!important}
 #chroniclesPanel .calendar-day{background:#fffaf0;border-color:#d7c9a8}
