@@ -74,6 +74,31 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-upcoming-card .ss-muted{color:#566b5b}
 #seriesPanel .ss-upcoming-card button{margin-left:auto}
 #seriesPanel .ss-reminder{grid-column:1/-1;border:1px solid #b6a16f;background:#e8d9b5;color:#294637;border-radius:10px;padding:10px}
+#seriesPanel .ss-calendar{margin:22px 0 28px;border:1px solid #9d8b63;border-radius:15px;background:#294639;padding:17px}
+#seriesPanel .ss-calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#seriesPanel .ss-calendar-heading h3{margin:0 0 5px}
+#seriesPanel .ss-calendar-inner{margin-top:17px;background:#f3e8d4;color:#284637;padding:17px;border-radius:12px}
+#seriesPanel .ss-calendar-inner .ss-muted{color:#566b5b}
+#seriesPanel .ss-calendar-nav{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+#seriesPanel .ss-calendar-nav strong{font:normal 23px Georgia,serif;min-width:160px;text-align:center}
+#seriesPanel .ss-calendar-nav button{padding:5px 12px}
+#seriesPanel .ss-calendar-filter{display:flex;align-items:center;gap:10px;margin:14px 0}
+#seriesPanel .ss-calendar-filter select{max-width:190px}
+#seriesPanel .ss-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+#seriesPanel .ss-calendar-weekday{text-align:center;font-size:12px;color:#496552;font-weight:bold;padding:7px 0}
+#seriesPanel .ss-calendar-day{background:#fff9ee;border:1px solid #dfd0b3;border-radius:7px;min-width:0;min-height:59px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;color:#284637}
+#seriesPanel .ss-calendar-day:hover,#seriesPanel .ss-calendar-day.selected{background:#dce6d6;border-color:#64836a}
+#seriesPanel .ss-calendar-day small{font-size:10px}
+#seriesPanel .ss-calendar-day i{display:inline-block;width:7px;height:7px;border-radius:50%}
+#seriesPanel .ss-dot-confirmed{background:#3f7758}
+#seriesPanel .ss-dot-tentative{background:#ba8e4e}
+#seriesPanel .ss-calendar-legend{display:flex;gap:18px;font-size:12px;color:#496552;margin:11px 0}
+#seriesPanel .ss-calendar-selected,#seriesPanel .ss-calendar-tba{margin-top:17px;padding-top:12px;border-top:1px solid #d1bf9f}
+#seriesPanel .ss-calendar-selected h4,#seriesPanel .ss-calendar-tba h4{font:normal 20px Georgia,serif;color:#284637;margin:0 0 12px}
+#seriesPanel .ss-calendar-book{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #ddceb2;flex-wrap:wrap}
+#seriesPanel .ss-calendar-book-text{flex:1;min-width:130px;font-size:13px}
+#seriesPanel .ss-calendar-book .ss-cover,#seriesPanel .ss-calendar-book .ss-cover-placeholder{width:48px;height:72px;flex-basis:48px}
+@media(max-width:550px){#seriesPanel .ss-calendar{padding:10px}#seriesPanel .ss-calendar-inner{padding:9px}#seriesPanel .ss-calendar-day{min-height:44px}#seriesPanel .ss-calendar-day small{font-size:9px}#seriesPanel .ss-calendar-nav{gap:6px}#seriesPanel .ss-calendar-nav strong{min-width:110px;font-size:18px}}
 #seriesPanel .ss-empty{padding:25px;text-align:center;border:1px dashed #b49c6a;border-radius:14px}
 @media(max-width:760px){#seriesPanel .ss-upcoming{grid-template-columns:1fr}#seriesPanel .ss-wishlist{grid-template-columns:1fr}#seriesPanel .ss-grid{grid-template-columns:1fr}#seriesPanel .ss-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `;document.head.appendChild(styles);
@@ -134,10 +159,17 @@ panel.innerHTML='<div class="ss-hero"><small style="letter-spacing:.2em;color:#d
 '<div class="ss-metrics"><div class="ss-metric"><strong>'+all.length+'</strong><small>Series tracked</small></div><div class="ss-metric"><strong>'+waiting+'</strong><small>Waiting room</small></div><div class="ss-metric"><strong>'+complete+'</strong><small>Confirmed paths complete</small></div><div class="ss-metric"><strong>'+upcoming+'</strong><small>Awaiting release</small></div></div>'+
 '<h3>💚 Want to Read from My Series</h3><div class="ss-muted">Your series-only reading wishlist. Adding a book to your Bookshelf is always your choice.</div>'+
 (wishlist.length?'<div class="ss-wishlist">'+wishlist.map(({s,b})=>'<div class="ss-wish"><div style="display:flex;gap:10px;align-items:center">'+coverHtml(b)+'<div><strong>'+E(b.title)+'</strong><div class="ss-muted">'+E(s.name)+(s.author?' · '+E(s.author):'')+'</div><span class="ss-pill">'+E(b.status)+'</span>'+(ownershipOf(b)==='Preordered'?'<span class="ss-preorder">✓ Already preordered</span>':'')+'</div></div><button data-to-shelf="'+E(s.id)+'" data-key="'+E(b.key)+'">+ Add to My Bookshelf</button></div>').join('')+'</div>':'<div class="ss-muted" style="margin:12px 0 24px">No series-only books on your reading wishlist yet. Add a book to a series and mark it Want to Read or Waiting for Release.</div>')+
+calendarMarkup(all)+
 '<h3>🌿 Your Series Collection</h3><div class="ss-muted">Series already named in your bookshelf appear automatically. Add missing books without creating duplicate bookshelf records.</div>'+
 '<div class="ss-toolbar"><input id="ssSearch" type="search" placeholder="Search series or author…" value="'+E(search)+'">'+filterSelect()+'<button id="ssAdd">+ Add Series</button></div>'+
 (list.length?'<div class="ss-grid">'+list.map(s=>card(s)).join('')+'</div>':'<div class="ss-empty">No matching series yet. Add a series to begin your collection. 🌱</div>')+
 '<h3 style="margin-top:25px">📅 Upcoming Releases & Preorders</h3><div class="ss-muted">Dates are entered by you. Tentative dates are not guaranteed. Preorders stay preordered until you confirm receipt.</div>'+(releaseBooks.length?'<div class="ss-upcoming">'+releaseBooks.map(({s,b})=>'<div class="ss-upcoming-card">'+coverHtml(b)+'<div style="flex:1;min-width:120px"><strong>'+E(b.title)+'</strong><div class="ss-muted">'+E(s.name)+'</div><div>'+E(releaseKind(b)==='Unknown'?'Date TBA':releaseKind(b)+' · '+dateLabel(b))+'</div>'+(countdown(b)?'<div>'+E(countdown(b))+'</div>':'')+(ownershipOf(b)==='Preordered'?'<span class="ss-preorder">Preordered</span>':'')+'</div>'+(duePreorder(b)?'<button data-received="'+E(s.id)+'" data-key="'+E(b.key)+'">📦 Received it?</button>':'')+'</div>').join('')+'</div>':'<div class="ss-muted" style="margin:12px 0 25px">No upcoming releases or outstanding preorders yet.</div>');
+panel.querySelector('#ssCalendarToggle')?.addEventListener('click',()=>{calendarOpen=!calendarOpen;render()});
+panel.querySelector('#ssCalPrev')?.addEventListener('click',()=>{calendarMonth--;if(calendarMonth<0){calendarMonth=11;calendarYear--}calendarSelected='';render()});
+panel.querySelector('#ssCalNext')?.addEventListener('click',()=>{calendarMonth++;if(calendarMonth>11){calendarMonth=0;calendarYear++}calendarSelected='';render()});
+panel.querySelector('#ssCalToday')?.addEventListener('click',()=>{const d=new Date();calendarYear=d.getFullYear();calendarMonth=d.getMonth();calendarSelected='';render()});
+panel.querySelector('#ssCalFilter')?.addEventListener('change',e=>{calendarFilter=e.target.value;render()});
+panel.querySelectorAll('[data-cal-day]').forEach(btn=>btn.addEventListener('click',()=>{calendarSelected=btn.dataset.calDay;render()}));
 panel.querySelector('#ssSearch').addEventListener('input',e=>{search=e.target.value;const start=e.target.selectionStart;render();const field=panel.querySelector('#ssSearch');field.focus();field.setSelectionRange(start,start)});
 panel.querySelector('#ssFilter').addEventListener('change',e=>{filter=e.target.value;render()});
 panel.querySelector('#ssAdd').addEventListener('click',()=>{const name=prompt('Series name?');if(!name?.trim())return;const existing=entries().find(s=>slug(s.name)===slug(name));if(existing){expanded=existing.id;render();return}const author=prompt('Author (optional)?')||'';const obj={id:crypto.randomUUID(),name:name.trim(),author:author.trim(),kind:'Interconnected Standalones',publication:'Unknown',personal:'Exploring',books:[]};store().push(obj);expanded=obj.id;persist()});
