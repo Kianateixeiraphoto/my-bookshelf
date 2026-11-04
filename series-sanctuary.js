@@ -5,6 +5,15 @@ const panel=document.getElementById('seriesPanel');if(!panel)return;
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const statuses=['Want to Read','Maybe Someday','Skip','Waiting for Release','Read','Currently Reading','DNF'];
 const ownerships=['Not Owned','Owned','Preordered'];
+const releaseKinds=['Unknown','Confirmed','Tentative'];
+const releaseKind=b=>releaseKinds.includes(b.releaseKind)?b.releaseKind:'Unknown';
+const releaseDate=b=>/^\d{4}-\d{2}-\d{2}$/.test(b.releaseDate||'')?b.releaseDate:'';
+const localToday=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+const released=b=>releaseKind(b)==='Confirmed'&&releaseDate(b)&&releaseDate(b)<=localToday();
+const awaiting=b=>b.status==='Waiting for Release'||(releaseKind(b)!=='Unknown'&&releaseDate(b)&&releaseDate(b)>localToday());
+const duePreorder=b=>ownershipOf(b)==='Preordered'&&released(b);
+const dateLabel=b=>releaseDate(b)?new Date(releaseDate(b)+'T12:00:00').toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'TBA';
+const countdown=b=>{if(releaseKind(b)!=='Confirmed'||!releaseDate(b)||releaseDate(b)<=localToday())return '';const days=Math.round((new Date(releaseDate(b)+'T12:00:00')-new Date(localToday()+'T12:00:00'))/86400000);return days+' day'+(days===1?'':'s')+' left'};
 const ownershipOf=b=>ownerships.includes(b.ownership)?b.ownership:(b.preordered?'Preordered':b.linked?'Owned':'Not Owned');
 const styles=document.createElement('style');styles.textContent=`
 #seriesPanel{background:linear-gradient(145deg,#10261f,#244436 65%,#132b24);border:1px solid #a7976c;border-radius:20px;padding:clamp(15px,3vw,30px);color:#f4ead8}
