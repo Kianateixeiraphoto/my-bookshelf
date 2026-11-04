@@ -92,6 +92,7 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-calendar-day i{display:inline-block;width:7px;height:7px;border-radius:50%}
 #seriesPanel .ss-dot-confirmed{background:#3f7758}
 #seriesPanel .ss-dot-tentative{background:#ba8e4e}
+#seriesPanel .ss-dot-unknown{background:#a0a0a0}
 #seriesPanel .ss-calendar-legend{display:flex;gap:18px;font-size:12px;color:#496552;margin:11px 0}
 #seriesPanel .ss-calendar-selected,#seriesPanel .ss-calendar-tba{margin-top:17px;padding-top:12px;border-top:1px solid #d1bf9f}
 #seriesPanel .ss-calendar-selected h4,#seriesPanel .ss-calendar-tba h4{font:normal 20px Georgia,serif;color:#284637;margin:0 0 12px}
@@ -132,14 +133,14 @@ function calendarMarkup(all){
  const monthTitle=new Date(calendarYear,calendarMonth,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
  const first=new Date(calendarYear,calendarMonth,1).getDay(),length=new Date(calendarYear,calendarMonth+1,0).getDate();
  const selectedItems=monthItems.filter(x=>releaseDate(x.b)===calendarSelected);
- const tba=all.flatMap(s=>allBooks(s).filter(b=>b.status==='Waiting for Release'&&!releaseDate(b)).map(b=>({s,b})));
+ const tba=all.flatMap(s=>allBooks(s).filter(b=>!releaseDate(b)&&(b.status==='Waiting for Release'||ownershipOf(b)==='Preordered'||releaseKind(b)!=='Unknown')).map(b=>({s,b})));
  let html='<section class="ss-calendar"><div class="ss-calendar-heading"><div><h3>📅 Your Release Calendar</h3><div class="ss-muted">Every new story has its moment.</div></div><button id="ssCalendarToggle" type="button" aria-expanded="'+calendarOpen+'">'+(calendarOpen?'▴ Collapse calendar':'▾ Open calendar')+'</button></div>';
  if(!calendarOpen)return html+'</section>';
  html+='<div class="ss-calendar-inner"><div class="ss-calendar-nav"><button id="ssCalPrev" type="button" aria-label="Previous month">‹</button><strong>'+E(monthTitle)+'</strong><button id="ssCalNext" type="button" aria-label="Next month">›</button><button id="ssCalToday" type="button">Today</button></div><div class="ss-calendar-filter"><label for="ssCalFilter">Show</label>'+select(calendarFilter,['All','Confirmed','Tentative'],'id="ssCalFilter"')+'</div><div class="ss-calendar-grid">';
  for(const day of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'])html+='<div class="ss-calendar-weekday">'+day+'</div>';
  for(let i=0;i<first;i++)html+='<div class="ss-calendar-blank"></div>';
- for(let d=1;d<=length;d++){const date=calendarKey(calendarYear,calendarMonth,d),events=monthItems.filter(x=>releaseDate(x.b)===date),confirmed=events.some(x=>releaseKind(x.b)==='Confirmed'),tentative=events.some(x=>releaseKind(x.b)==='Tentative');html+='<button type="button" class="ss-calendar-day'+(date===calendarSelected?' selected':'')+'" data-cal-day="'+date+'" aria-label="'+E(date)+(events.length?' '+events.length+' releases':'')+'"><span>'+d+'</span>'+(events.length?'<small>'+events.length+' 📖</small>':'')+(confirmed?'<i class="ss-dot-confirmed"></i>':'')+(tentative?'<i class="ss-dot-tentative"></i>':'')+'</button>'}
- html+='</div><div class="ss-calendar-legend"><span>● Confirmed</span><span>◇ Tentative</span></div>';
+ for(let d=1;d<=length;d++){const date=calendarKey(calendarYear,calendarMonth,d),events=monthItems.filter(x=>releaseDate(x.b)===date),confirmed=events.some(x=>releaseKind(x.b)==='Confirmed'),tentative=events.some(x=>releaseKind(x.b)==='Tentative'),unknown=events.some(x=>releaseKind(x.b)==='Unknown');html+='<button type="button" class="ss-calendar-day'+(date===calendarSelected?' selected':'')+'" data-cal-day="'+date+'" aria-label="'+E(date)+(events.length?' '+events.length+' releases':'')+'"><span>'+d+'</span>'+(events.length?'<small>'+events.length+' 📖</small>':'')+(confirmed?'<i class="ss-dot-confirmed"></i>':'')+(tentative?'<i class="ss-dot-tentative"></i>':'')+(unknown?'<i class="ss-dot-unknown"></i>':'')+'</button>'}
+ html+='</div><div class="ss-calendar-legend"><span>● Confirmed</span><span>◇ Tentative</span><span>○ Unspecified</span></div>';
  if(calendarSelected){html+='<div class="ss-calendar-selected"><h4>'+E(new Date(calendarSelected+'T12:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}))+'</h4>'+(selectedItems.length?selectedItems.map(({s,b})=>calendarBookCard(s,b)).join(''):'<div class="ss-muted">No releases for this date with the selected filter.</div>')+'</div>'}
  html+='<div class="ss-calendar-tba"><h4>🕯️ Waiting for a Date (TBA)</h4>'+(tba.length?tba.map(({s,b})=>calendarBookCard(s,b)).join(''):'<div class="ss-muted">No undated waiting-for-release books.</div>')+'</div></div></section>';
  return html;
