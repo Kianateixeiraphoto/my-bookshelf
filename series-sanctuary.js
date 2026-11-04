@@ -97,6 +97,29 @@ const active=b=>!['Skip','Maybe Someday','DNF'].includes(b.status);
 const finished=b=>b.status==='Read';
 function editable(s){let saved=store().find(x=>x.id===s.id);if(saved)return saved;const obj={id:s.id,name:s.name,author:s.author||'',kind:s.kind||'Interconnected Standalones',publication:s.publication||'Unknown',personal:s.personal||'Exploring',books:[]};store().push(obj);return obj}
 async function persist(){saveLocal();render();try{if(session)await sync()}catch(e){console.error('Series Sanctuary cloud save failed',e)}}
+let calendarOpen=false,calendarFilter='All',calendarSelected='';
+const calendarNow=new Date();
+let calendarYear=calendarNow.getFullYear(),calendarMonth=calendarNow.getMonth();
+const calendarKey=(y,m,d)=>y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+const calendarItems=all=>all.flatMap(s=>allBooks(s).filter(b=>releaseDate(b)).map(b=>({s,b})));
+function calendarMarkup(all){
+ const items=calendarItems(all),monthItems=items.filter(x=>releaseDate(x.b).slice(0,7)===calendarKey(calendarYear,calendarMonth,1).slice(0,7)&& (calendarFilter==='All'||releaseKind(x.b)===calendarFilter));
+ const monthTitle=new Date(calendarYear,calendarMonth,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ const first=new Date(calendarYear,calendarMonth,1).getDay(),length=new Date(calendarYear,calendarMonth+1,0).getDate();
+ const selectedItems=monthItems.filter(x=>releaseDate(x.b)===calendarSelected);
+ const tba=all.flatMap(s=>allBooks(s).filter(b=>b.status==='Waiting for Release'&&!releaseDate(b)).map(b=>({s,b})));
+ let html='<section class="ss-calendar"><div class="ss-calendar-heading"><div><h3>📅 Your Release Calendar</h3><div class="ss-muted">Every new story has its moment.</div></div><button id="ssCalendarToggle" type="button" aria-expanded="'+calendarOpen+'">'+(calendarOpen?'▴ Collapse calendar':'▾ Open calendar')+'</button></div>';
+ if(!calendarOpen)return html+'</section>';
+ html+='<div class="ss-calendar-inner"><div class="ss-calendar-nav"><button id="ssCalPrev" type="button" aria-label="Previous month">‹</button><strong>'+E(monthTitle)+'</strong><button id="ssCalNext" type="button" aria-label="Next month">›</button><button id="ssCalToday" type="button">Today</button></div><div class="ss-calendar-filter"><label for="ssCalFilter">Show</label>'+select(calendarFilter,['All','Confirmed','Tentative'],'id="ssCalFilter"')+'</div><div class="ss-calendar-grid">';
+ for(const day of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'])html+='<div class="ss-calendar-weekday">'+day+'</div>';
+ for(let i=0;i<first;i++)html+='<div class="ss-calendar-blank"></div>';
+ for(let d=1;d<=length;d++){const date=calendarKey(calendarYear,calendarMonth,d),events=monthItems.filter(x=>releaseDate(x.b)===date),confirmed=events.some(x=>releaseKind(x.b)==='Confirmed'),tentative=events.some(x=>releaseKind(x.b)==='Tentative');html+='<button type="button" class="ss-calendar-day'+(date===calendarSelected?' selected':'')+'" data-cal-day="'+date+'" aria-label="'+E(date)+(events.length?' '+events.length+' releases':'')+'"><span>'+d+'</span>'+(events.length?'<small>'+events.length+' 📖</small>':'')+(confirmed?'<i class="ss-dot-confirmed"></i>':'')+(tentative?'<i class="ss-dot-tentative"></i>':'')+'</button>'}
+ html+='</div><div class="ss-calendar-legend"><span>● Confirmed</span><span>◇ Tentative</span></div>';
+ if(calendarSelected){html+='<div class="ss-calendar-selected"><h4>'+E(new Date(calendarSelected+'T12:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}))+'</h4>'+(selectedItems.length?selectedItems.map(({s,b})=>calendarBookCard(s,b)).join(''):'<div class="ss-muted">No releases for this date with the selected filter.</div>')+'</div>'}
+ html+='<div class="ss-calendar-tba"><h4>🕯️ Waiting for a Date (TBA)</h4>'+(tba.length?tba.map(({s,b})=>calendarBookCard(s,b)).join(''):'<div class="ss-muted">No undated waiting-for-release books.</div>')+'</div></div></section>';
+ return html;
+}
+function calendarBookCard(s,b){return '<div class="ss-calendar-book">'+coverHtml(b)+'<div class="ss-calendar-book-text"><strong>'+E(b.title)+'</strong><div class="ss-muted">'+E(s.name)+'</div><div>'+E(releaseDate(b)?releaseKind(b)+' · '+dateLabel(b):'Date TBA')+'</div><span class="ss-pill">'+E(ownershipOf(b))+'</span></div>'+(duePreorder(b)?'<button type="button" data-received="'+E(s.id)+'" data-key="'+E(b.key)+'">📦 Received it?</button>':'')+'</div>'}
 const filterOptions=[['all','All series'],['Exploring','Exploring'],['Reading','Reading'],['Waiting for Completion','Waiting for Completion'],['Finished','Marked Finished']];
 const filterSelect=()=>'<select id="ssFilter" aria-label="Filter series">'+filterOptions.map(([value,label])=>'<option value="'+E(value)+'" '+(value===filter?'selected':'')+'>'+E(label)+'</option>').join('')+'</select>';
 const select=(value,choices,attr)=>'<select '+attr+'>'+choices.map(x=>'<option value="'+E(x)+'" '+(x===value?'selected':'')+'>'+E(x)+'</option>').join('')+'</select>';
