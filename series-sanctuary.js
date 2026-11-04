@@ -45,7 +45,7 @@ const linked=s=>groups().get(slug(s.name))?.books||[];
 const allBooks=s=>{const items=new Map();for(const b of linked(s))items.set('library:'+b.id,{key:'library:'+b.id,title:b.title||'Untitled',number:b.bookNumber||'',status:b.status==='Read'?'Read':b.status==='Currently Reading'?'Currently Reading':b.status==='DNF'?'DNF':'Want to Read',linked:true});for(const b of s.books||[]){const k=b.key||('extra:'+slug(b.title));if(!items.has(k))items.set(k,{...b,key:k,linked:false});else items.set(k,{...items.get(k),...b,key:k})}return [...items.values()].sort((a,b)=>(Number(a.number)||999)-(Number(b.number)||999))};
 const active=b=>!['Skip','Maybe Someday','DNF'].includes(b.status);
 const finished=b=>b.status==='Read';
-function editable(s){let saved=store().find(x=>x.id===s.id);if(saved)return saved;const obj={id:crypto.randomUUID(),name:s.name,author:s.author||'',kind:s.kind||'Interconnected Standalones',publication:s.publication||'Unknown',personal:s.personal||'Exploring',books:[]};store().push(obj);return obj}
+function editable(s){let saved=store().find(x=>x.id===s.id);if(saved)return saved;const obj={id:s.id,name:s.name,author:s.author||'',kind:s.kind||'Interconnected Standalones',publication:s.publication||'Unknown',personal:s.personal||'Exploring',books:[]};store().push(obj);return obj}
 async function persist(){saveLocal();render();try{if(session)await sync()}catch(e){console.error('Series Sanctuary cloud save failed',e)}}
 const select=(value,choices,attr)=>'<select '+attr+'>'+choices.map(x=>'<option value="'+E(x)+'" '+(x===value?'selected':'')+'>'+E(x)+'</option>').join('')+'</select>';
 function render(){
