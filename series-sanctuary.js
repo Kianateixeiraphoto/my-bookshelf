@@ -38,7 +38,7 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-cover-tools .ss-muted{font-size:11px}
 #seriesPanel .ss-number{display:flex;align-items:center;gap:7px;grid-column:1/-1;flex-wrap:wrap}
 #seriesPanel .ss-number label{font-size:12px;color:#46614e}
-#seriesPanel .ss-number input{width:90px;padding:7px}
+#seriesPanel .ss-detail .ss-number input{width:90px;max-width:90px;padding:7px}
 #seriesPanel .ss-wish .ss-cover,#seriesPanel .ss-wish .ss-cover-placeholder{width:48px;height:72px;flex-basis:48px}
 
 #seriesPanel .ss-book textarea{grid-column:1/-1;width:100%;min-height:60px}
@@ -66,7 +66,7 @@ const entries=()=>{const out=[...store()];for(const [key,g] of groups())if(!out.
 const linked=s=>groups().get(slug(s.name))?.books||[];
 const shelfBook=b=>b.key?.startsWith('library:')?library().find(x=>'library:'+x.id===b.key):null;
 const coverOf=b=>{const x=shelfBook(b);return x?.cover||b.cover||''};
-const safeCover=url=>{try{const u=new URL(url);return ['https:','http:','data:'].includes(u.protocol)?url:''}catch{return url.startsWith('data:image/')?url:''}};
+const safeCover=url=>{try{const u=new URL(url);return ['https:','http:'].includes(u.protocol)?url:''}catch{return url.startsWith('data:image/')?url:''}};
 const coverHtml=b=>{const url=safeCover(coverOf(b));return url?'<img class="ss-cover" loading="lazy" src="'+E(url)+'" alt="Cover of '+E(b.title)+'" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<span class=&quot;ss-cover-placeholder&quot;>📚</span>\')">':'<span class="ss-cover-placeholder" aria-label="Cover not selected">📚</span>'};
 
 const bookKey=(s,b)=>b.key||('extra:'+slug(b.title));
