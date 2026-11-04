@@ -63,8 +63,17 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-ownership label{font-size:12px;margin:0;color:#46614e}
 #seriesPanel .ss-ownership select{flex:1;min-width:140px;max-width:220px}
 #seriesPanel .ss-preorder{display:inline-block;background:#d7e5d1;color:#28533b;border-radius:14px;padding:3px 8px;font-size:12px;margin:5px 0}
+#seriesPanel .ss-release-fields{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#seriesPanel .ss-release-fields label{font-size:12px;color:#46614e;margin:0}
+#seriesPanel .ss-release-fields input,#seriesPanel .ss-release-fields select{width:100%;margin-top:5px}
+#seriesPanel .ss-release-summary{grid-column:1/-1;font-size:12px;color:#46614e}
+#seriesPanel .ss-upcoming{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 25px}
+#seriesPanel .ss-upcoming-card{background:#f3e8d4;color:#284637;border:1px solid #c7b58d;border-radius:12px;padding:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#seriesPanel .ss-upcoming-card .ss-muted{color:#566b5b}
+#seriesPanel .ss-upcoming-card button{margin-left:auto}
+#seriesPanel .ss-reminder{grid-column:1/-1;border:1px solid #b6a16f;background:#e8d9b5;color:#294637;border-radius:10px;padding:10px}
 #seriesPanel .ss-empty{padding:25px;text-align:center;border:1px dashed #b49c6a;border-radius:14px}
-@media(max-width:760px){#seriesPanel .ss-wishlist{grid-template-columns:1fr}#seriesPanel .ss-grid{grid-template-columns:1fr}#seriesPanel .ss-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){#seriesPanel .ss-upcoming{grid-template-columns:1fr}#seriesPanel .ss-wishlist{grid-template-columns:1fr}#seriesPanel .ss-grid{grid-template-columns:1fr}#seriesPanel .ss-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `;document.head.appendChild(styles);
 let search='',filter='all',expanded='';
 const store=()=>{if(!state.seriesSanctuary||typeof state.seriesSanctuary!=='object')state.seriesSanctuary={series:[]};if(!Array.isArray(state.seriesSanctuary.series))state.seriesSanctuary.series=[];return state.seriesSanctuary.series};
