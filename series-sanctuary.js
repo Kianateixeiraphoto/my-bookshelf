@@ -18,8 +18,8 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
 #seriesPanel .ss-metric{background:#294639;border:1px solid #807d5b;border-radius:12px;padding:16px;text-align:center}
 #seriesPanel .ss-metric strong{display:block;font:normal 29px Georgia,serif;color:#f0d7a2}
-#seriesPanel .ss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start
-#seriesPanel .ss-card{background:#f3e8d4;color:#30493b;border:1px solid #c7b58d;border-radius:14px;padding:18px;min-width:0;align-self:start
+#seriesPanel .ss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+#seriesPanel .ss-card{background:#f3e8d4;color:#30493b;border:1px solid #c7b58d;border-radius:14px;padding:18px;min-width:0;align-self:start}
 #seriesPanel .ss-card h4{font:normal 22px Georgia,serif;color:#284637;margin:0 0 4px}
 #seriesPanel .ss-card .ss-muted{color:#647266}
 #seriesPanel .ss-pill{display:inline-block;background:#e0d2b4;color:#355441;border-radius:15px;padding:4px 9px;font-size:12px;margin:5px 5px 5px 0}
