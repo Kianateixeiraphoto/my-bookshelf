@@ -18,8 +18,8 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
 #seriesPanel .ss-metric{background:#294639;border:1px solid #807d5b;border-radius:12px;padding:16px;text-align:center}
 #seriesPanel .ss-metric strong{display:block;font:normal 29px Georgia,serif;color:#f0d7a2}
-#seriesPanel .ss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-#seriesPanel .ss-card{background:#f3e8d4;color:#30493b;border:1px solid #c7b58d;border-radius:14px;padding:18px;min-width:0}
+#seriesPanel .ss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start
+#seriesPanel .ss-card{background:#f3e8d4;color:#30493b;border:1px solid #c7b58d;border-radius:14px;padding:18px;min-width:0;align-self:start
 #seriesPanel .ss-card h4{font:normal 22px Georgia,serif;color:#284637;margin:0 0 4px}
 #seriesPanel .ss-card .ss-muted{color:#647266}
 #seriesPanel .ss-pill{display:inline-block;background:#e0d2b4;color:#355441;border-radius:15px;padding:4px 9px;font-size:12px;margin:5px 5px 5px 0}
@@ -47,16 +47,18 @@ const active=b=>!['Skip','Maybe Someday','DNF'].includes(b.status);
 const finished=b=>b.status==='Read';
 function editable(s){let saved=store().find(x=>x.id===s.id);if(saved)return saved;const obj={id:s.id,name:s.name,author:s.author||'',kind:s.kind||'Interconnected Standalones',publication:s.publication||'Unknown',personal:s.personal||'Exploring',books:[]};store().push(obj);return obj}
 async function persist(){saveLocal();render();try{if(session)await sync()}catch(e){console.error('Series Sanctuary cloud save failed',e)}}
+const filterOptions=[['all','All series'],['Exploring','Exploring'],['Reading','Reading'],['Waiting for Completion','Waiting for Completion'],['Finished','Marked Finished']];
+const filterSelect=()=>'<select id="ssFilter" aria-label="Filter series">'+filterOptions.map(([value,label])=>'<option value="'+E(value)+'" '+(value===filter?'selected':'')+'>'+E(label)+'</option>').join('')+'</select>';
 const select=(value,choices,attr)=>'<select '+attr+'>'+choices.map(x=>'<option value="'+E(x)+'" '+(x===value?'selected':'')+'>'+E(x)+'</option>').join('')+'</select>';
 function render(){
-const all=entries(),list=all.filter(s=>(s.name+' '+s.author).toLowerCase().includes(search)&& (filter==='all'||s.personal===filter||filter==='waiting'&&s.personal==='Waiting for Completion'||filter==='completed'&&allBooks(s).filter(active).length>0&&allBooks(s).filter(active).every(finished)));
+const all=entries(),list=all.filter(s=>(s.name+' '+s.author).toLowerCase().includes(search)&& (filter==='all'||s.personal===filter||filter==='waiting'&&s.personal==='Waiting for Completion'||filter==='completed'&&s.personal==='Finished'));
 const waiting=all.filter(s=>s.personal==='Waiting for Completion').length;
-const complete=all.filter(s=>allBooks(s).filter(active).length>0&&allBooks(s).filter(active).every(finished)).length;
+const complete=all.filter(s=>s.personal==='Finished'&&allBooks(s).filter(active).length>0&&allBooks(s).filter(active).every(finished)).length;
 const upcoming=all.flatMap(s=>allBooks(s).filter(b=>b.status==='Waiting for Release')).length;
 panel.innerHTML='<div class="ss-hero"><small style="letter-spacing:.2em;color:#d9bc87">THE FOREST LIBRARY AFTER DARK</small><h2>🌙 Series Sanctuary</h2><p>Every story deserves its ending. You choose which stories are yours.</p></div>'+
-'<div class="ss-metrics"><div class="ss-metric"><strong>'+all.length+'</strong><small>Series tracked</small></div><div class="ss-metric"><strong>'+waiting+'</strong><small>Waiting room</small></div><div class="ss-metric"><strong>'+complete+'</strong><small>Your paths complete</small></div><div class="ss-metric"><strong>'+upcoming+'</strong><small>Awaiting release</small></div></div>'+
+'<div class="ss-metrics"><div class="ss-metric"><strong>'+all.length+'</strong><small>Series tracked</small></div><div class="ss-metric"><strong>'+waiting+'</strong><small>Waiting room</small></div><div class="ss-metric"><strong>'+complete+'</strong><small>Confirmed paths complete</small></div><div class="ss-metric"><strong>'+upcoming+'</strong><small>Awaiting release</small></div></div>'+
 '<h3>🌿 Your Series Collection</h3><div class="ss-muted">Series already named in your bookshelf appear automatically. Add missing books without creating duplicate bookshelf records.</div>'+
-'<div class="ss-toolbar"><input id="ssSearch" type="search" placeholder="Search series or author…" value="'+E(search)+'">'+select(filter,['all','Exploring','Reading','Waiting for Completion','Finished','waiting','completed'],'id="ssFilter"')+'<button id="ssAdd">+ Add Series</button></div>'+
+'<div class="ss-toolbar"><input id="ssSearch" type="search" placeholder="Search series or author…" value="'+E(search)+'">'+filterSelect()+'<button id="ssAdd">+ Add Series</button></div>'+
 (list.length?'<div class="ss-grid">'+list.map(s=>card(s)).join('')+'</div>':'<div class="ss-empty">No matching series yet. Add a series to begin your collection. 🌱</div>')+
 '<h3 style="margin-top:25px">📅 Upcoming Releases</h3><div class="ss-muted">Books you mark “Waiting for Release” appear in your series. Verified dates and calendar views are planned for Phase 3.</div>';
 panel.querySelector('#ssSearch').addEventListener('input',e=>{search=e.target.value;const start=e.target.selectionStart;render();const field=panel.querySelector('#ssSearch');field.focus();field.setSelectionRange(start,start)});
