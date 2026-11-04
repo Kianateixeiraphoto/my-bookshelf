@@ -66,7 +66,7 @@ const entries=()=>{const out=[...store()];for(const [key,g] of groups())if(!out.
 const linked=s=>groups().get(slug(s.name))?.books||[];
 const shelfBook=b=>b.key?.startsWith('library:')?library().find(x=>'library:'+x.id===b.key):null;
 const coverOf=b=>{const x=shelfBook(b);return x?.cover||b.cover||''};
-const safeCover=url=>{try{const u=new URL(url);return ['https:','http:'].includes(u.protocol)?url:''}catch{return url.startsWith('data:image/')?url:''}};
+const safeCover=url=>{if(typeof url!=='string')return '';const v=url.trim();if(/^data:image\/(?:png|jpeg|jpg|webp|gif|avif);base64,[a-z0-9+/=\s]+$/i.test(v))return v;try{const u=new URL(v);return ['https:','http:'].includes(u.protocol)?v:''}catch{return ''}};
 const coverHtml=b=>{const url=safeCover(coverOf(b));return url?'<img class="ss-cover" loading="lazy" src="'+E(url)+'" alt="Cover of '+E(b.title)+'" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<span class=&quot;ss-cover-placeholder&quot;>📚</span>\')">':'<span class="ss-cover-placeholder" aria-label="Cover not selected">📚</span>'};
 
 const bookKey=(s,b)=>b.key||('extra:'+slug(b.title));
