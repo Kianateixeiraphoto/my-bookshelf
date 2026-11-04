@@ -30,6 +30,11 @@ const styles=document.createElement('style');styles.textContent=`
 #seriesPanel .ss-metric{background:#294639;border:1px solid #807d5b;border-radius:12px;padding:16px;text-align:center}
 #seriesPanel .ss-metric strong{display:block;font:normal 29px Georgia,serif;color:#f0d7a2}
 #seriesPanel .ss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+#seriesPanel .ss-publication-section{margin:24px 0 28px}
+#seriesPanel .ss-publication-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+#seriesPanel .ss-publication-heading h3{margin:0}
+#seriesPanel .ss-publication-count{border:1px solid #a48d61;border-radius:20px;padding:4px 10px;font-size:12px;color:#e9d7b3}
+#seriesPanel .ss-publication-description{font-size:13px;color:#d5c6a8;margin:5px 0 15px}
 #seriesPanel .ss-card{background:#f3e8d4;color:#30493b;border:1px solid #c7b58d;border-radius:14px;padding:18px;min-width:0;align-self:start}
 #seriesPanel .ss-card h4{font:normal 22px Georgia,serif;color:#284637;margin:0 0 4px}
 #seriesPanel .ss-card .ss-muted{color:#647266}
@@ -149,6 +154,7 @@ function calendarBookCard(s,b){return '<div class="ss-calendar-book">'+coverHtml
 const filterOptions=[['all','All series'],['Exploring','Exploring'],['Reading','Reading'],['Waiting for Completion','Waiting for Completion'],['Finished','Marked Finished']];
 const filterSelect=()=>'<select id="ssFilter" aria-label="Filter series">'+filterOptions.map(([value,label])=>'<option value="'+E(value)+'" '+(value===filter?'selected':'')+'>'+E(label)+'</option>').join('')+'</select>';
 const select=(value,choices,attr)=>'<select '+attr+'>'+choices.map(x=>'<option value="'+E(x)+'" '+(x===value?'selected':'')+'>'+E(x)+'</option>').join('')+'</select>';
+const seriesSection=(title,items,description)=>'<section class="ss-publication-section"><div class="ss-publication-heading"><h3>'+title+'</h3><span class="ss-publication-count">'+items.length+' '+(items.length===1?'series':'series')+'</span></div><p class="ss-publication-description">'+description+'</p>'+(items.length?'<div class="ss-grid">'+items.map(s=>card(s)).join('')+'</div>':'<div class="ss-empty">No matching series in this section yet.</div>')+'</section>';
 function render(){
 const all=entries(),list=all.filter(s=>(s.name+' '+s.author).toLowerCase().includes(search)&& (filter==='all'||s.personal===filter||filter==='waiting'&&s.personal==='Waiting for Completion'||filter==='completed'&&s.personal==='Finished'));
 const waiting=all.filter(s=>s.personal==='Waiting for Completion').length;
@@ -163,7 +169,8 @@ panel.innerHTML='<div class="ss-hero"><small style="letter-spacing:.2em;color:#d
 calendarMarkup(all)+
 '<h3>🌿 Your Series Collection</h3><div class="ss-muted">Series already named in your bookshelf appear automatically. Add missing books without creating duplicate bookshelf records.</div>'+
 '<div class="ss-toolbar"><input id="ssSearch" type="search" placeholder="Search series or author…" value="'+E(search)+'">'+filterSelect()+'<button id="ssAdd">+ Add Series</button></div>'+
-(list.length?'<div class="ss-grid">'+list.map(s=>card(s)).join('')+'</div>':'<div class="ss-empty">No matching series yet. Add a series to begin your collection. 🌱</div>')+
+seriesSection('🌱 Ongoing Series',list.filter(s=>s.publication!=='Complete'),'Ongoing, on hiatus, or publication status unknown.')+
+seriesSection('📚 Completed Series',list.filter(s=>s.publication==='Complete'),'Publication complete — regardless of your personal reading progress.')+
 '<h3 style="margin-top:25px">📅 Upcoming Releases & Preorders</h3><div class="ss-muted">Dates are entered by you. Tentative dates are not guaranteed. Preorders stay preordered until you confirm receipt.</div>'+(releaseBooks.length?'<div class="ss-upcoming">'+releaseBooks.map(({s,b})=>'<div class="ss-upcoming-card">'+coverHtml(b)+'<div style="flex:1;min-width:120px"><strong>'+E(b.title)+'</strong><div class="ss-muted">'+E(s.name)+'</div><div>'+E(releaseKind(b)==='Unknown'?'Date TBA':releaseKind(b)+' · '+dateLabel(b))+'</div>'+(countdown(b)?'<div>'+E(countdown(b))+'</div>':'')+(ownershipOf(b)==='Preordered'?'<span class="ss-preorder">Preordered</span>':'')+'</div>'+(duePreorder(b)?'<button data-received="'+E(s.id)+'" data-key="'+E(b.key)+'">📦 Received it?</button>':'')+'</div>').join('')+'</div>':'<div class="ss-muted" style="margin:12px 0 25px">No upcoming releases or outstanding preorders yet.</div>');
 panel.querySelector('#ssCalendarToggle')?.addEventListener('click',()=>{calendarOpen=!calendarOpen;render()});
 panel.querySelector('#ssCalPrev')?.addEventListener('click',()=>{calendarMonth--;if(calendarMonth<0){calendarMonth=11;calendarYear--}calendarSelected='';render()});
