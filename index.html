@@ -387,12 +387,11 @@ body:before{
 </style><style>
 .reading-progress{margin:10px 0}.reading-progress-label{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#62735c}.reading-progress-track{height:9px;background:rgba(49,88,58,.13);border-radius:999px;overflow:hidden;margin-top:5px}.reading-progress-track span{display:block;height:100%;background:#668b62;border-radius:999px}.dnf-note{margin:9px 0;padding:8px 10px;border-radius:10px;background:rgba(255,248,232,.8);font-size:11px;color:#725f52}.progress-fields,.dnf-fields{padding:10px;border:1px solid var(--line);border-radius:13px}.progress-fields label,.dnf-fields label{display:block;margin-top:7px}.progress-fields input,.dnf-fields input,.dnf-fields textarea{width:100%}.book.book-reading,.book.book-dnf{height:520px!important;min-height:520px!important;max-height:520px!important}.book.book-reading .book-body,.book.book-dnf .book-body{height:210px!important;min-height:210px!important;max-height:210px!important;overflow:visible!important}.book.book-reading .reading-progress{display:block!important;margin:7px 0 4px}.book.book-reading .reading-progress-label{display:flex;justify-content:space-between;gap:8px;font-size:10px}.book.book-reading .reading-progress-track{display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.72);overflow:hidden;margin-top:4px;border:1px solid rgba(38,87,57,.16)}.book.book-reading .reading-progress-track span{display:block;height:100%;min-width:3px;border-radius:99px;background:#5d8b6a}.book.book-dnf .dnf-note{display:block!important;margin:6px 0 3px;font-size:10px;line-height:1.35}@media(max-width:600px){.book.book-reading,.book.book-dnf{height:430px!important;min-height:430px!important;max-height:430px!important}.book.book-reading .book-body,.book.book-dnf .book-body{height:190px!important;min-height:190px!important;max-height:190px!important}}[hidden]{display:none!important}
 
-/* Keep book cards fixed-height; reveal long titles by gently panning on hover or focus. */
-#bookshelfPanel .book-title{display:block;overflow:hidden;white-space:nowrap;max-width:100%;min-width:0}
+/* Native horizontal scrolling avoids animation/keyframe timing issues. */
+#bookshelfPanel .book-title{display:block;overflow-x:auto;overflow-y:hidden;white-space:nowrap;max-width:100%;min-width:0;scrollbar-width:none;scroll-behavior:smooth}
+#bookshelfPanel .book-title::-webkit-scrollbar{display:none}
 #bookshelfPanel .book-title-text{display:inline-block;white-space:nowrap;max-width:none}
-#bookshelfPanel .book-title:hover .book-title-text,#bookshelfPanel .book-title:focus .book-title-text{animation:bookshelf-title-pan var(--title-pan-duration,3s) ease-in-out infinite alternate;animation-play-state:running}
-@keyframes bookshelf-title-pan{from{transform:translateX(0)}to{transform:translateX(var(--title-pan-distance,0px))}}
-@media(prefers-reduced-motion:reduce){#bookshelfPanel .book-title:hover .book-title-text,#bookshelfPanel .book-title:focus .book-title-text{animation:none}#bookshelfPanel .book-title:focus{overflow-x:auto}}
+@media(prefers-reduced-motion:reduce){#bookshelfPanel .book-title{scroll-behavior:auto}}
 </style><link rel="stylesheet" href="romance-dna.css?v=20261023-phase1"></head>
 <body><div class="app">
 <div id="cloudBar" class="panel" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:12px"><div><b>☁️ Cloud Library</b><div id="cloudStatus" class="status">Not signed in</div></div><div class="actions"><button class="btn" id="syncBtn">☁️ Sync Now</button><button class="btn" id="authBtn">Log In</button><button class="btn" id="signOutBtn" style="display:none">Sign Out</button></div></div>
@@ -620,17 +619,20 @@ window.addBook = function(book = {}) {
 <script src="collectors-cabinet.js?v=20261105-readable-cards"></script>
 <script src="library-vault.js?v=20261110-compact-free"></script>
 <script>
-// Titles remain single-line and never resize their cards. Measure each overflow on hover/focus.
-function prepareBookshelfTitle(t){
+// Scroll the clipped title itself. No card sizing or book data changes.
+const bookshelfTitleTimers=new WeakMap();
+function scrollBookshelfTitle(t,active){
  if(!t)return;
- const inner=t.querySelector('.book-title-text');if(!inner)return;
- const overflow=Math.ceil(inner.getBoundingClientRect().width-t.getBoundingClientRect().width);
- if(overflow>1){
-   t.style.setProperty('--title-pan-distance',(-overflow-4)+'px');
-   t.style.setProperty('--title-pan-duration',Math.max(2.5,overflow/28+1)+'s');
- }else{t.style.setProperty('--title-pan-distance','0px')}
+ clearTimeout(bookshelfTitleTimers.get(t));
+ if(!active){t.scrollTo({left:0,behavior:'smooth'});return}
+ const distance=t.scrollWidth-t.clientWidth;
+ if(distance<=1)return;
+ const timer=setTimeout(()=>{if(t.matches(':hover,:focus'))t.scrollTo({left:distance,behavior:'smooth'})},180);
+ bookshelfTitleTimers.set(t,timer);
 }
-document.addEventListener('mouseover',e=>prepareBookshelfTitle(e.target.closest?.('#bookshelfPanel .book-title')));
-document.addEventListener('focusin',e=>prepareBookshelfTitle(e.target.closest?.('#bookshelfPanel .book-title')));
+document.addEventListener('mouseover',e=>{const t=e.target.closest?.('#bookshelfPanel .book-title');if(t&&!t.contains(e.relatedTarget))scrollBookshelfTitle(t,true)});
+document.addEventListener('mouseout',e=>{const t=e.target.closest?.('#bookshelfPanel .book-title');if(t&&!t.contains(e.relatedTarget))scrollBookshelfTitle(t,false)});
+document.addEventListener('focusin',e=>scrollBookshelfTitle(e.target.closest?.('#bookshelfPanel .book-title'),true));
+document.addEventListener('focusout',e=>scrollBookshelfTitle(e.target.closest?.('#bookshelfPanel .book-title'),false));
 </script>
 </body></html>
