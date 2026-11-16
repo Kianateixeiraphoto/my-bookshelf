@@ -390,9 +390,9 @@ body:before{
 /* Keep book cards fixed-height; reveal long titles by gently panning on hover or focus. */
 #bookshelfPanel .book-title{display:block;overflow:hidden;white-space:nowrap;max-width:100%;min-width:0}
 #bookshelfPanel .book-title-text{display:inline-block;white-space:nowrap;max-width:none}
-#bookshelfPanel .book-title.is-panning .book-title-text{animation:bookshelf-title-pan var(--title-pan-duration,3s) ease-in-out infinite alternate}
+#bookshelfPanel .book-title:hover .book-title-text,#bookshelfPanel .book-title:focus .book-title-text{animation:bookshelf-title-pan var(--title-pan-duration,3s) ease-in-out infinite alternate;animation-play-state:running}
 @keyframes bookshelf-title-pan{from{transform:translateX(0)}to{transform:translateX(var(--title-pan-distance,0px))}}
-@media(prefers-reduced-motion:reduce){#bookshelfPanel .book-title.is-panning .book-title-text{animation:none}#bookshelfPanel .book-title:focus{overflow-x:auto}}
+@media(prefers-reduced-motion:reduce){#bookshelfPanel .book-title:hover .book-title-text,#bookshelfPanel .book-title:focus .book-title-text{animation:none}#bookshelfPanel .book-title:focus{overflow-x:auto}}
 </style><link rel="stylesheet" href="romance-dna.css?v=20261023-phase1"></head>
 <body><div class="app">
 <div id="cloudBar" class="panel" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:12px"><div><b>☁️ Cloud Library</b><div id="cloudStatus" class="status">Not signed in</div></div><div class="actions"><button class="btn" id="syncBtn">☁️ Sync Now</button><button class="btn" id="authBtn">Log In</button><button class="btn" id="signOutBtn" style="display:none">Sign Out</button></div></div>
@@ -620,10 +620,17 @@ window.addBook = function(book = {}) {
 <script src="collectors-cabinet.js?v=20261105-readable-cards"></script>
 <script src="library-vault.js?v=20261110-compact-free"></script>
 <script>
-// Title panning is presentation-only: it never changes book data or card dimensions.
-document.addEventListener('pointerover',function(e){const t=e.target.closest?.('#bookshelfPanel .book-title');if(!t||t.contains(e.relatedTarget))return;const inner=t.querySelector('.book-title-text');if(!inner)return;const overflow=Math.ceil(inner.scrollWidth-t.clientWidth);if(overflow>1){t.style.setProperty('--title-pan-distance',(-overflow-3)+'px');t.style.setProperty('--title-pan-duration',Math.max(2.5,overflow/24+1.5)+'s');t.classList.add('is-panning')}});
-document.addEventListener('pointerout',function(e){const t=e.target.closest?.('#bookshelfPanel .book-title');if(t&&!t.contains(e.relatedTarget))t.classList.remove('is-panning')});
-document.addEventListener('focusin',function(e){const t=e.target.closest?.('#bookshelfPanel .book-title');if(!t)return;const inner=t.querySelector('.book-title-text');if(!inner)return;const overflow=Math.ceil(inner.scrollWidth-t.clientWidth);if(overflow>1){t.style.setProperty('--title-pan-distance',(-overflow-3)+'px');t.style.setProperty('--title-pan-duration',Math.max(2.5,overflow/24+1.5)+'s');t.classList.add('is-panning')}});
-document.addEventListener('focusout',function(e){const t=e.target.closest?.('#bookshelfPanel .book-title');if(t)t.classList.remove('is-panning')});
+// Titles remain single-line and never resize their cards. Measure each overflow on hover/focus.
+function prepareBookshelfTitle(t){
+ if(!t)return;
+ const inner=t.querySelector('.book-title-text');if(!inner)return;
+ const overflow=Math.ceil(inner.getBoundingClientRect().width-t.getBoundingClientRect().width);
+ if(overflow>1){
+   t.style.setProperty('--title-pan-distance',(-overflow-4)+'px');
+   t.style.setProperty('--title-pan-duration',Math.max(2.5,overflow/28+1)+'s');
+ }else{t.style.setProperty('--title-pan-distance','0px')}
+}
+document.addEventListener('mouseover',e=>prepareBookshelfTitle(e.target.closest?.('#bookshelfPanel .book-title')));
+document.addEventListener('focusin',e=>prepareBookshelfTitle(e.target.closest?.('#bookshelfPanel .book-title')));
 </script>
 </body></html>
