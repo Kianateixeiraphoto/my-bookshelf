@@ -90,7 +90,7 @@ function render(){
  panel.appendChild(annual);
  const wrappedSections=[...wrapped.querySelectorAll('.wrap-section')];
  const byHeading=term=>wrappedSections.find(x=>x.querySelector('h3')?.textContent.trim().toLowerCase()===term);
- panel.appendChild(section('📅 Monthly Reading & Calendar',[byHeading('monthly reading'),stats.querySelector('.stats-calendar-panel')]));
+ panel.appendChild(section('📅 Reading Calendar',[stats.querySelector('.stats-calendar-panel')]));
  panel.appendChild(section('📚 Reading Highlights',[byHeading('favorite authors'),byHeading('highest-rated reads')]));
  const statsPanels=[...stats.querySelectorAll('.panel')].filter(x=>!x.classList.contains('stats-calendar-panel'));
  panel.appendChild(section('🌿 Library Status & Tag Collections',statsPanels));
