@@ -82,15 +82,11 @@ function render(){
  select.value=String(selectedYear);
  select.addEventListener('change',()=>{selectedYear=Number(select.value);render()});
  toolbar.append(label,select);panel.appendChild(toolbar);
- const overview=document.createElement('section');overview.className='chron-block';overview.innerHTML='<h3>🌿 Your Library at a Glance</h3>';
- const statsGrid=clone(stats.querySelector('.reading-grid'));if(statsGrid)overview.appendChild(statsGrid);
- panel.appendChild(overview);
  const annual=document.createElement('section');annual.className='chron-block';annual.innerHTML='<h3>🌹 '+selectedYear+' Reading Highlights</h3>';
  const annualGrid=clone(wrapped.querySelector('.wrap-grid'));if(annualGrid)annual.appendChild(annualGrid);
  panel.appendChild(annual);
  const wrappedSections=[...wrapped.querySelectorAll('.wrap-section')];
  const byHeading=term=>wrappedSections.find(x=>x.querySelector('h3')?.textContent.trim().toLowerCase()===term);
- panel.appendChild(section('📅 Reading Calendar',[stats.querySelector('.stats-calendar-panel')]));
  panel.appendChild(section('📚 Reading Highlights',[byHeading('favorite authors'),byHeading('highest-rated reads')]));
  const statsPanels=[...stats.querySelectorAll('.panel')].filter(x=>!x.classList.contains('stats-calendar-panel'));
  panel.appendChild(section('🌿 Library Status & Tag Collections',statsPanels));
